@@ -1,0 +1,111 @@
+:root {
+  --color-primary: #2E7D32;
+  /* Green */
+  --color-primary-dark: #1B5E20;
+  --color-secondary: #FBC02D;
+  /* Yellow */
+  --color-white: #FFFFFF;
+  --color-background: #F5F5F5;
+  --color-text: #333333;
+  --color-text-light: #757575;
+  --color-error: #D32F2F;
+  --border-radius: 8px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+  margin-bottom: 0.5em;
+  color: var(--color-primary-dark);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* ========== RESPONSIVE ========== */
+
+/* Desktop: hide mobile header */
+@media (min-width: 769px) {
+  .mobile-header {
+    display: none !important;
+  }
+
+  .mobile-nav-overlay {
+    display: none !important;
+  }
+}
+
+/* Mobile: hide desktop sidebar, show mobile header */
+@media (max-width: 768px) {
+  .desktop-sidebar {
+    display: none !important;
+  }
+
+  .mobile-header {
+    display: flex !important;
+  }
+
+  /* Route page: stack vertically */
+  .route-layout {
+    flex-direction: column !important;
+    height: auto !important;
+  }
+
+  .route-sidebar {
+    width: 100% !important;
+    max-height: 45vh;
+    border-right: none !important;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .route-map {
+    height: 55vh !important;
+    min-height: 300px;
+  }
+
+  /* Settings page */
+  .settings-page {
+    padding: 1rem !important;
+  }
+
+  /* Dashboard grids */
+  .container {
+    padding: 0 0.75rem;
+  }
+}
