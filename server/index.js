@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const dotenv = require('dotenv');
 
 const { syncDatabase } = require('./models');
@@ -34,7 +35,7 @@ app.use('/api/collections', collectionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
 
-app.use('/reports', express.static('public/reports'));
+app.use('/reports', express.static(path.join(__dirname, 'public/reports')));
 
 app.get('/', (req, res) => {
     res.send('Cat Óleo API is running');
