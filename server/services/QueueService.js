@@ -9,12 +9,38 @@ class QueueService {
     constructor() {
         this.queue = [];
         this.isProcessing = false;
+        this.buffers = new Map(); // To group multiple messages from the same client
     }
 
     // Add a new message to the queue to be processed
     add(clientId, messageText) {
-        this.queue.push({ clientId, messageText });
-        console.log(`[QueueService] Added message to queue. Current size: ${this.queue.length}`);
+        const BUFF_TIME_MS = 3 * 60 * 1000; // 3 minutes configurable buffer
+
+        // If a buffer already exists for this client, append to it and reset the timer
+        if (this.buffers.has(clientId)) {
+            const buffer = this.buffers.get(clientId);
+            clearTimeout(buffer.timer);
+            buffer.text += '\n' + messageText; // Concatenate messages
+
+            // Set new timer
+            buffer.timer = setTimeout(() => this.flushBuffer(clientId), BUFF_TIME_MS);
+            console.log(`[QueueService] Appended message from client ${clientId}. Timer reset to ${BUFF_TIME_MS / 1000}s.`);
+        } else {
+            // Create a new buffer
+            const timer = setTimeout(() => this.flushBuffer(clientId), BUFF_TIME_MS);
+            this.buffers.set(clientId, { text: messageText, timer });
+            console.log(`[QueueService] Started ${BUFF_TIME_MS / 1000}s buffer for client ${clientId}.`);
+        }
+    }
+
+    // Move from the wait buffer to the actual execution queue
+    flushBuffer(clientId) {
+        const buffer = this.buffers.get(clientId);
+        if (!buffer) return;
+
+        this.buffers.delete(clientId);
+        this.queue.push({ clientId, messageText: buffer.text });
+        console.log(`[QueueService] Timer reached! Flushed buffer for client ${clientId} to the main processing queue. Current size: ${this.queue.length}`);
 
         // Start processing if it's currently idle
         if (!this.isProcessing) {
