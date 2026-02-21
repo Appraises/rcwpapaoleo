@@ -2,7 +2,8 @@
 // In-Memory Queue for processing WhatsApp messages 1-by-1 to prevent CPU overload
 
 const LlmService = require('./LlmService');
-const { CollectionRequest } = require('../models');
+const EvolutionService = require('./EvolutionService');
+const { CollectionRequest, Client } = require('../models');
 
 class QueueService {
     constructor() {
@@ -46,6 +47,13 @@ class QueueService {
                     status: 'PENDING'
                 });
                 console.log(`[QueueService] ✅ Intention understood: COLLECTION. Request created for client ${task.clientId}`);
+
+                // 3. Send automatic WhatsApp confirmation
+                const client = await Client.findByPk(task.clientId);
+                if (client && client.phone) {
+                    const message = `Olá, ${client.name}! ♻️\n\nSeu pedido de coleta foi registrado pelo nosso assistente virtual.\nNossos coletadores já foram avisados e o seu óleo será recolhido o mais breve possível!\n\nA equipe Cat Óleo agradece a sua colaboração.`;
+                    await EvolutionService.sendTextMessage(client.phone, message);
+                }
             } else {
                 console.log(`[QueueService] ℹ️ Intention understood: NON-COLLECTION (or error). Ignored message from client ${task.clientId}`);
             }
