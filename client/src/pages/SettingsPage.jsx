@@ -222,7 +222,7 @@ const SettingsPage = () => {
                             type="text"
                             value={baseName}
                             onChange={(e) => setBaseName(e.target.value)}
-                            placeholder="Ex: Sede CatÓleo"
+                            placeholder="Ex: Sede Cat Óleo"
                             style={inputStyle}
                             required
                         />
@@ -277,7 +277,7 @@ const SettingsPage = () => {
                             type="text"
                             value={companyName}
                             onChange={(e) => setCompanyName(e.target.value)}
-                            placeholder="Ex: CatÓleo Reciclagem LTDA"
+                            placeholder="Ex: Cat Óleo Reciclagem LTDA"
                             style={inputStyle}
                         />
                     </div>

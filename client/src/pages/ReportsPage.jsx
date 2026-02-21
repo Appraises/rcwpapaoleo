@@ -1,157 +1,172 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { Download, FileText, Calendar, Clock, Loader, Plus } from 'lucide-react';
 import api from '../api/axios';
-import { Droplet, Leaf, TrendingUp, Download } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const ReportsPage = () => {
-    const [stats, setStats] = useState(null);
+    const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [generating, setGenerating] = useState(false);
+    const [activeTab, setActiveTab] = useState('weekly');
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                // Reusing dashboard stats for now, but in a real app would likely have specific report endpoints
-                // To be creative, we'll calculate environmental impact on the frontend based on these stats
-                const response = await api.get('/dashboard/stats');
-                setStats(response.data);
-            } catch (error) {
-                console.error('Error fetching stats:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchStats();
+        fetchReports();
     }, []);
 
-    if (loading) return <div className="p-8">Carregando relatórios...</div>;
-    if (!stats) return <div className="p-8">Erro ao carregar dados.</div>;
+    const fetchReports = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/reports');
+            setReports(response.data);
+        } catch (error) {
+            console.error('Error fetching reports:', error);
+            alert('Não foi possível carregar os relatórios.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    // Creative Calculations
-    // 1 Liter of oil contaminates 25,000 liters of water
-    const waterSaved = stats.totalGeneral * 25000;
-    // Approx 2.5 kg of CO2 avoided per liter recycled into biodiesel
-    const co2Avoided = stats.totalGeneral * 2.5;
+    const handleForceGenerate = async (type) => {
+        try {
+            setGenerating(true);
+            await api.post('/reports/generate', { type });
+            alert(`Relatório ${type === 'weekly' ? 'Semanal' : 'Mensal'} gerado com sucesso!`);
+            fetchReports(); // Refresh the list
+        } catch (error) {
+            console.error('Error generating report:', error);
+            alert('Erro ao gerar relatório. Apenas administradores podem gerar manualmente.');
+        } finally {
+            setGenerating(false);
+        }
+    };
 
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+    const handleDownload = (filePath) => {
+        window.open(`http://localhost:3001${filePath}`, '_blank');
+    };
+
+    const filteredReports = reports.filter(r => r.type === activeTab);
 
     return (
         <div style={{ padding: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <h2 style={{ fontSize: '1.8rem', color: 'var(--color-text)' }}>Relatórios de Sustentabilidade</h2>
+                <h2 style={{ fontSize: '1.8rem', color: 'var(--color-text)' }}>Central de Relatórios PDF</h2>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button
+                        onClick={() => handleForceGenerate('weekly')}
+                        disabled={generating}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            padding: '0.75rem 1rem', backgroundColor: 'var(--color-primary)',
+                            color: 'white', borderRadius: 'var(--border-radius)', border: 'none', cursor: 'pointer',
+                            opacity: generating ? 0.7 : 1
+                        }}>
+                        {generating ? <Loader size={18} className="spin" /> : <Plus size={18} />} Gerar Semanal
+                    </button>
+                    <button
+                        onClick={() => handleForceGenerate('monthly')}
+                        disabled={generating}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            padding: '0.75rem 1rem', backgroundColor: '#3b82f6',
+                            color: 'white', borderRadius: 'var(--border-radius)', border: 'none', cursor: 'pointer',
+                            opacity: generating ? 0.7 : 1
+                        }}>
+                        {generating ? <Loader size={18} className="spin" /> : <Plus size={18} />} Gerar Mensal
+                    </button>
+                </div>
+            </div>
+
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '2px solid #eee' }}>
                 <button
-                    onClick={() => window.print()}
+                    onClick={() => setActiveTab('weekly')}
                     style={{
-                        display: 'flex', alignItems: 'center', gap: '0.5rem',
-                        padding: '0.75rem 1.5rem', backgroundColor: 'var(--color-primary)',
-                        color: 'white', borderRadius: 'var(--border-radius)', border: 'none', cursor: 'pointer'
-                    }}>
-                    <Download size={18} /> Exportar PDF
+                        padding: '0.75rem 1.5rem', background: 'none', border: 'none', cursor: 'pointer',
+                        borderBottom: activeTab === 'weekly' ? '3px solid var(--color-primary)' : '3px solid transparent',
+                        color: activeTab === 'weekly' ? 'var(--color-primary)' : '#666',
+                        fontWeight: activeTab === 'weekly' ? 'bold' : 'normal',
+                        fontSize: '1rem'
+                    }}
+                >
+                    Relatórios Semanais
+                </button>
+                <button
+                    onClick={() => setActiveTab('monthly')}
+                    style={{
+                        padding: '0.75rem 1.5rem', background: 'none', border: 'none', cursor: 'pointer',
+                        borderBottom: activeTab === 'monthly' ? '3px solid #3b82f6' : '3px solid transparent',
+                        color: activeTab === 'monthly' ? '#3b82f6' : '#666',
+                        fontWeight: activeTab === 'monthly' ? 'bold' : 'normal',
+                        fontSize: '1rem'
+                    }}
+                >
+                    Relatórios Mensais
                 </button>
             </div>
 
-            {/* Environmental Impact Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: '3rem', color: '#666' }}>Carregando histórico...</div>
+            ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                    {filteredReports.length === 0 ? (
+                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', backgroundColor: '#f8fafc', borderRadius: '1rem', color: '#64748b' }}>
+                            Nenhum relatório {activeTab === 'weekly' ? 'semanal' : 'mensal'} gerado ainda. <br />
+                            Use o botão acima para gerar um manual ou aguarde a rotina automática.
+                        </div>
+                    ) : (
+                        filteredReports.map(report => (
+                            <div key={report.id} style={{
+                                backgroundColor: 'white', padding: '1.5rem', borderRadius: '1rem',
+                                boxShadow: 'var(--shadow-md)', border: '1px solid #f1f5f9',
+                                display: 'flex', flexDirection: 'column'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
+                                    <div style={{
+                                        padding: '1rem', borderRadius: '0.75rem',
+                                        backgroundColor: report.type === 'weekly' ? '#dcfce7' : '#dbeafe',
+                                        color: report.type === 'weekly' ? '#16a34a' : '#2563eb'
+                                    }}>
+                                        <FileText size={28} />
+                                    </div>
+                                    <div>
+                                        <h3 style={{ fontSize: '1.1rem', color: '#334155', marginBottom: '0.25rem' }}>
+                                            Relatório {report.type === 'weekly' ? 'Semanal' : 'Mensal'}
+                                        </h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#64748b' }}>
+                                            <Calendar size={14} />
+                                            {format(new Date(report.startDate), 'dd MMM', { locale: ptBR })} - {format(new Date(report.endDate), 'dd MMM, yyyy', { locale: ptBR })}
+                                        </div>
+                                    </div>
+                                </div>
 
-                {/* Water Saved Card */}
-                <div style={{
-                    backgroundColor: '#e0f2fe', padding: '1.5rem', borderRadius: '1rem',
-                    boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', gap: '1.5rem'
-                }}>
-                    <div style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '50%', color: '#0284c7' }}>
-                        <Droplet size={32} />
-                    </div>
-                    <div>
-                        <p style={{ color: '#0369a1', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.25rem' }}>Água Preservada</p>
-                        <h3 style={{ color: '#0c4a6e', fontSize: '1.8rem', fontWeight: 'bold' }}>
-                            {waterSaved.toLocaleString('pt-BR')} <span style={{ fontSize: '1rem' }}>Litros</span>
-                        </h3>
-                        <p style={{ fontSize: '0.8rem', color: '#075985' }}>1L óleo = 25.000L água</p>
-                    </div>
-                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '1.5rem' }}>
+                                    <Clock size={12} /> Gerado em: {format(new Date(report.generatedAt), "dd/MM/yyyy 'às' HH:mm")}
+                                </div>
 
-                {/* CO2 Avoided Card */}
-                <div style={{
-                    backgroundColor: '#dcfce7', padding: '1.5rem', borderRadius: '1rem',
-                    boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', gap: '1.5rem'
-                }}>
-                    <div style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '50%', color: '#16a34a' }}>
-                        <Leaf size={32} />
-                    </div>
-                    <div>
-                        <p style={{ color: '#15803d', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.25rem' }}>CO2 Evitado</p>
-                        <h3 style={{ color: '#14532d', fontSize: '1.8rem', fontWeight: 'bold' }}>
-                            {co2Avoided.toLocaleString('pt-BR')} <span style={{ fontSize: '1rem' }}>kg</span>
-                        </h3>
-                        <p style={{ fontSize: '0.8rem', color: '#166534' }}>Reciclagem p/ Biodiesel</p>
-                    </div>
-                </div>
-
-                {/* General Total */}
-                <div style={{
-                    backgroundColor: '#fff7ed', padding: '1.5rem', borderRadius: '1rem',
-                    boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', gap: '1.5rem'
-                }}>
-                    <div style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '50%', color: '#ea580c' }}>
-                        <TrendingUp size={32} />
-                    </div>
-                    <div>
-                        <p style={{ color: '#c2410c', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.25rem' }}>Total Coletado</p>
-                        <h3 style={{ color: '#7c2d12', fontSize: '1.8rem', fontWeight: 'bold' }}>
-                            {stats.totalGeneral.toLocaleString('pt-BR')} <span style={{ fontSize: '1rem' }}>L</span>
-                        </h3>
-                        <p style={{ fontSize: '0.8rem', color: '#9a3412' }}>Desde o início</p>
-                    </div>
-                </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-
-                {/* Monthly Trend Chart */}
-                <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-md)' }}>
-                    <h3 style={{ marginBottom: '1.5rem', color: '#333', fontSize: '1.1rem' }}>Evolução Mensal da Coleta</h3>
-                    <div style={{ height: '300px' }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={stats.chartData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                                <XAxis dataKey="name" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                    cursor={{ stroke: '#4caf50', strokeWidth: 2 }}
-                                />
-                                <Line type="monotone" dataKey="value" stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 4, fill: "var(--color-primary)" }} activeDot={{ r: 6 }} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Clients Distribution Chart */}
-                <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-md)' }}>
-                    <h3 style={{ marginBottom: '1.5rem', color: '#333', fontSize: '1.1rem' }}>Top 5 Clientes (Contribuição)</h3>
-                    <div style={{ height: '300px' }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={stats.ranking.map((r) => ({ name: r.Client?.name || 'Unknown', value: parseInt(r.totalQuantity) }))}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={100}
-                                    paddingAngle={5}
-                                    dataKey="value"
+                                <button
+                                    onClick={() => handleDownload(report.filePath)}
+                                    style={{
+                                        width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
+                                        backgroundColor: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1',
+                                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        gap: '0.5rem', fontWeight: '500', transition: 'all 0.2s', marginTop: 'auto'
+                                    }}
+                                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
+                                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.color = '#334155'; }}
                                 >
-                                    {stats.ranking.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
+                                    <Download size={18} /> Baixar PDF
+                                </button>
+                            </div>
+                        ))
+                    )}
                 </div>
-            </div>
+            )}
+
+            <style>{`
+                @keyframes spin { 100% { transform: rotate(360deg); } }
+                .spin { animation: spin 1s linear infinite; }
+            `}</style>
         </div>
     );
 };

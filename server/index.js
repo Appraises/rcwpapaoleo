@@ -13,13 +13,16 @@ const clientRoutes = require('./routes/clientRoutes');
 const collectionRoutes = require('./routes/collectionRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const authRoutes = require('./routes/authRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 // const authMiddleware = require('./middlewares/authMiddleware'); // Uncomment to protect routes globally or use in specific routes
 
 const seedUser = require('./seed');
+const initCronJobs = require('./cron/reportCron');
 
 // Sync Database
 syncDatabase().then(() => {
     seedUser();
+    initCronJobs();
 });
 
 app.use(cors());
@@ -29,9 +32,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/collections', collectionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/reports', reportRoutes);
+
+app.use('/reports', express.static('public/reports'));
 
 app.get('/', (req, res) => {
-    res.send('CatÓleo API is running');
+    res.send('Cat Óleo API is running');
 });
 
 app.listen(PORT, () => {

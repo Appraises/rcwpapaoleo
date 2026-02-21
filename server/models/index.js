@@ -4,6 +4,7 @@ const Client = require('./Client');
 const Collection = require('./Collection');
 const SystemSetting = require('./SystemSetting');
 const Address = require('./Address');
+const Report = require('./Report');
 
 // Associations
 Client.hasOne(Address, { foreignKey: 'clientId', onDelete: 'CASCADE' });
@@ -17,7 +18,7 @@ Collection.belongsTo(User, { foreignKey: 'userId' });
 
 const syncDatabase = async () => {
     try {
-        await sequelize.sync({ alter: true }); // Use alter: true to update tables without dropping
+        await sequelize.sync();
         console.log('Database synced successfully');
     } catch (error) {
         console.error('Error syncing database:', error);
@@ -29,5 +30,6 @@ module.exports = {
     Client,
     Collection,
     SystemSetting,
+    Report,
     syncDatabase,
 };

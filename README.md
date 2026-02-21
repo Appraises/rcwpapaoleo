@@ -1,4 +1,4 @@
-# CatÓleo Web Platform
+# Cat Óleo Web Platform
 
 Plataforma moderna para gestão de coleta de óleo reciclável.
 
