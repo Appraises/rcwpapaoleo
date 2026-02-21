@@ -14,7 +14,7 @@ class QueueService {
 
     // Add a new message to the queue to be processed
     add(clientId, messageText) {
-        const BUFF_TIME_MS = 3 * 60 * 1000; // 3 minutes configurable buffer
+        const BUFF_TIME_MS = 2 * 60 * 1000; // 2 minutes configurable buffer
 
         // If a buffer already exists for this client, append to it and reset the timer
         if (this.buffers.has(clientId)) {
