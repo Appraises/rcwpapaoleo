@@ -156,7 +156,7 @@ class ReportService {
             });
 
             // 5. Save to Database
-            const reportUrl = `/reports/${fileName}`;
+            const reportUrl = `/api/public/reports/${fileName}`;
             const report = await Report.create({
                 type,
                 startDate,

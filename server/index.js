@@ -35,7 +35,7 @@ app.use('/api/collections', collectionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
 
-app.use('/reports', express.static(path.join(__dirname, 'public/reports')));
+app.use('/api/public/reports', express.static(path.join(__dirname, 'public/reports')));
 
 app.get('/', (req, res) => {
     res.send('Cat Óleo API is running');

@@ -42,7 +42,10 @@ const ReportsPage = () => {
     };
 
     const handleDownload = (filePath) => {
-        window.open(`http://localhost:3001${filePath}`, '_blank');
+        // Usa baseURL do axios se estiver em dev corporativo, senão usa caminho relativo direto
+        const isDev = window.location.hostname === 'localhost';
+        const url = isDev ? `http://localhost:3001${filePath}` : filePath;
+        window.open(url, '_blank');
     };
 
     const filteredReports = reports.filter(r => r.type === activeTab);
