@@ -46,6 +46,7 @@ const Layout = ({ children }) => {
                 padding: '2rem 1rem'
             }} className="desktop-sidebar">
                 <h1 style={{ color: 'white', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <img src="/logo.png" alt="CatÓleo" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
                     <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>CatÓleo</span>
                 </h1>
 
@@ -102,7 +103,10 @@ const Layout = ({ children }) => {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                 }} className="mobile-header">
-                    <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>CatÓleo</span>
+                    <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <img src="/logo.png" alt="CatÓleo" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+                        CatÓleo
+                    </span>
                     <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ background: 'none' }}>
                         <Menu size={24} color="var(--color-primary)" />
                     </button>
@@ -119,7 +123,10 @@ const Layout = ({ children }) => {
                             padding: '2rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem',
                             overflowY: 'auto',
                         }} onClick={e => e.stopPropagation()}>
-                            <h1 style={{ color: 'white', marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: 'bold' }}>CatÓleo</h1>
+                            <h1 style={{ color: 'white', marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <img src="/logo.png" alt="CatÓleo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                                CatÓleo
+                            </h1>
                             {[
                                 { to: '/', icon: <Home size={20} />, label: 'Dashboard' },
                                 { to: '/clients', icon: <Users size={20} />, label: 'Clientes' },

@@ -40,6 +40,11 @@ const Client = sequelize.define('Client', {
         defaultValue: 0,
         allowNull: false
     },
+    averageOilLiters: {
+        type: DataTypes.FLOAT,
+        defaultValue: 0,
+        allowNull: false
+    },
     observations: {
         type: DataTypes.TEXT,
         allowNull: true,

@@ -1,8 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Package } from 'lucide-react';
 import api from '../api/axios';
 import CollectionModal from '../components/CollectionModal';
+
+const CONTAINER_SIZES = [200, 100, 60, 50, 30];
+
+const calculateContainers = (liters) => {
+    if (!liters || liters <= 0) return null;
+    const containers = [];
+    let remaining = liters;
+    for (const size of CONTAINER_SIZES) {
+        const count = Math.floor(remaining / size);
+        if (count > 0) {
+            containers.push({ size, count });
+            remaining -= count * size;
+        }
+    }
+    if (remaining > 0) {
+        const smallest = [...CONTAINER_SIZES].reverse().find(s => s >= remaining) || CONTAINER_SIZES[CONTAINER_SIZES.length - 1];
+        const existing = containers.find(c => c.size === smallest);
+        if (existing) existing.count += 1;
+        else containers.push({ size: smallest, count: 1 });
+    }
+    const totalCapacity = containers.reduce((sum, c) => sum + c.size * c.count, 0);
+    const totalContainers = containers.reduce((sum, c) => sum + c.count, 0);
+    return { containers, totalCapacity, totalContainers };
+};
 
 const ClientDetailPage = () => {
     const { id } = useParams();
@@ -48,6 +72,10 @@ const ClientDetailPage = () => {
 
     const totalCollected = collections.reduce((acc, curr) => acc + curr.quantity, 0);
 
+    const containerRecommendation = useMemo(() => {
+        return calculateContainers(client?.averageOilLiters);
+    }, [client?.averageOilLiters]);
+
     return (
         <div className="container" style={{ padding: '2rem 1rem' }}>
             <button onClick={() => navigate('/clients')} style={{
@@ -79,6 +107,33 @@ const ClientDetailPage = () => {
                             <p style={{ fontSize: '0.9rem', color: 'var(--color-text-light)' }}>Total Coletado</p>
                             <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{totalCollected} Litros</p>
                         </div>
+
+                        {client.averageOilLiters > 0 && (
+                            <div style={{ marginTop: '0.75rem', padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: 'var(--border-radius)', border: '1px solid #bbf7d0' }}>
+                                <p style={{ fontSize: '0.9rem', color: '#15803d', marginBottom: '0.25rem' }}>Média Esperada: <strong>{client.averageOilLiters}L</strong></p>
+                                {containerRecommendation && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '600', color: '#166534', fontSize: '0.85rem' }}>
+                                            <Package size={14} /> Recipientes:
+                                        </div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                                            {containerRecommendation.containers.map((c, i) => (
+                                                <span key={i} style={{
+                                                    backgroundColor: '#dcfce7', color: '#166534',
+                                                    padding: '0.2rem 0.6rem', borderRadius: '999px',
+                                                    fontSize: '0.8rem', fontWeight: '500'
+                                                }}>
+                                                    {c.count}x {c.size}L
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <small style={{ color: '#15803d', fontSize: '0.75rem' }}>
+                                            Cap. total: {containerRecommendation.totalCapacity}L ({containerRecommendation.totalContainers} rec.)
+                                        </small>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 

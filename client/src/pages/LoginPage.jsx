@@ -43,7 +43,7 @@ const LoginPage = () => {
                 maxWidth: '400px'
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <h1 style={{ color: 'var(--color-primary)', fontSize: '2rem', marginBottom: '0.5rem' }}>CatÓleo</h1>
+                    <img src="/logoHorizontal.png" alt="CatÓleo" style={{ maxWidth: '220px', width: '100%', objectFit: 'contain', marginBottom: '0.75rem' }} />
                     <p style={{ color: 'var(--color-text-light)' }}>Entre para acessar o sistema</p>
                 </div>
 

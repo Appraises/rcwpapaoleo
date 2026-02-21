@@ -1,7 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Search, MapPin } from 'lucide-react';
+import { ArrowLeft, Save, Search, MapPin, Package } from 'lucide-react';
 import api from '../api/axios';
+
+const CONTAINER_SIZES = [200, 100, 60, 50, 30];
+
+const calculateContainers = (liters) => {
+    if (!liters || liters <= 0) return null;
+
+    const containers = [];
+    let remaining = liters;
+
+    for (const size of CONTAINER_SIZES) {
+        const count = Math.floor(remaining / size);
+        if (count > 0) {
+            containers.push({ size, count });
+            remaining -= count * size;
+        }
+    }
+
+    // If there's leftover, add the smallest container that fits
+    if (remaining > 0) {
+        // Find smallest container that can hold the remaining
+        const smallest = [...CONTAINER_SIZES].reverse().find(s => s >= remaining) || CONTAINER_SIZES[CONTAINER_SIZES.length - 1];
+        const existing = containers.find(c => c.size === smallest);
+        if (existing) {
+            existing.count += 1;
+        } else {
+            containers.push({ size: smallest, count: 1 });
+        }
+    }
+
+    const totalCapacity = containers.reduce((sum, c) => sum + c.size * c.count, 0);
+    const totalContainers = containers.reduce((sum, c) => sum + c.count, 0);
+
+    return { containers, totalCapacity, totalContainers };
+};
 
 const ClientFormPage = () => {
     const { id } = useParams();
@@ -22,6 +56,7 @@ const ClientFormPage = () => {
         reference: '',
         observations: '',
         pricePerLiter: '',
+        averageOilLiters: '',
         latitude: '',
         longitude: ''
     });
@@ -77,6 +112,7 @@ const ClientFormPage = () => {
                         latitude: addressData.latitude || '',
                         longitude: addressData.longitude || '',
                         pricePerLiter: client.pricePerLiter,
+                        averageOilLiters: client.averageOilLiters || '',
                         observations: client.observations,
                         address: client.address // legacy
                     });
@@ -92,6 +128,10 @@ const ClientFormPage = () => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
+
+    const containerRecommendation = useMemo(() => {
+        return calculateContainers(parseFloat(formData.averageOilLiters));
+    }, [formData.averageOilLiters]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -266,19 +306,62 @@ const ClientFormPage = () => {
                         />
                     </div>
 
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Preço de Compra (R$/L)</label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            name="pricePerLiter"
-                            value={formData.pricePerLiter || ''}
-                            onChange={handleChange}
-                            placeholder="0.00"
-                            style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
-                        />
-                        <small style={{ color: '#666' }}>Valor pago a este cliente por litro de óleo.</small>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Preço de Compra (R$/L)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                name="pricePerLiter"
+                                value={formData.pricePerLiter || ''}
+                                onChange={handleChange}
+                                placeholder="0.00"
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
+                            />
+                            <small style={{ color: '#666' }}>Valor pago a este cliente por litro de óleo.</small>
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Média de Óleo Esperada (L)</label>
+                            <input
+                                type="number"
+                                step="1"
+                                name="averageOilLiters"
+                                value={formData.averageOilLiters || ''}
+                                onChange={handleChange}
+                                placeholder="0"
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
+                            />
+                            <small style={{ color: '#666' }}>Quantidade média de litros de óleo por coleta.</small>
+                        </div>
                     </div>
+
+                    {containerRecommendation && (
+                        <div style={{
+                            backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0',
+                            padding: '1rem 1.25rem', borderRadius: 'var(--border-radius)',
+                            display: 'flex', flexDirection: 'column', gap: '0.5rem'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', color: '#166534' }}>
+                                <Package size={18} />
+                                Recipientes Recomendados
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                {containerRecommendation.containers.map((c, i) => (
+                                    <span key={i} style={{
+                                        backgroundColor: '#dcfce7', color: '#166534',
+                                        padding: '0.35rem 0.75rem', borderRadius: '999px',
+                                        fontSize: '0.9rem', fontWeight: '500'
+                                    }}>
+                                        {c.count}x {c.size}L
+                                    </span>
+                                ))}
+                            </div>
+                            <small style={{ color: '#15803d' }}>
+                                Capacidade total: {containerRecommendation.totalCapacity}L
+                                ({containerRecommendation.totalContainers} recipiente{containerRecommendation.totalContainers > 1 ? 's' : ''})
+                            </small>
+                        </div>
+                    )}
 
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Observações</label>
