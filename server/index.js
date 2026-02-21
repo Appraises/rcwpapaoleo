@@ -12,9 +12,11 @@ const PORT = process.env.PORT || 3001;
 
 const clientRoutes = require('./routes/clientRoutes');
 const collectionRoutes = require('./routes/collectionRoutes');
+const collectionRequestRoutes = require('./routes/collectionRequestRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const authRoutes = require('./routes/authRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const webhookRoutes = require('./routes/webhookRoutes');
 // const authMiddleware = require('./middlewares/authMiddleware'); // Uncomment to protect routes globally or use in specific routes
 
 const seedUser = require('./seed');
@@ -32,8 +34,10 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/collections', collectionRoutes);
+app.use('/api/collection-requests', collectionRequestRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 app.use('/api/public/reports', express.static(path.join(__dirname, 'public/reports')));
 

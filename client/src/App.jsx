@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
-import { Home, Users, CheckCircle, BarChart3, LogOut, Menu, Truck, Settings } from 'lucide-react';
+import { Home, Users, CheckCircle, BarChart3, LogOut, Menu, Truck, Settings, BellRing } from 'lucide-react';
 import ClientsPage from './pages/ClientsPage';
 import ClientFormPage from './pages/ClientFormPage';
 import ClientDetailPage from './pages/ClientDetailPage';
@@ -10,6 +10,7 @@ import ReportsPage from './pages/ReportsPage';
 import UsersPage from './pages/UsersPage';
 import RoutePage from './pages/RoutePage';
 import SettingsPage from './pages/SettingsPage';
+import RequestsPage from './pages/RequestsPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 
@@ -54,6 +55,7 @@ const Layout = ({ children }) => {
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <Link to="/" style={getLinkStyle('/')}><Home size={20} /> Dashboard</Link>
                     <Link to="/clients" style={getLinkStyle('/clients')}><Users size={20} /> Clientes</Link>
+                    <Link to="/requests" style={getLinkStyle('/requests')}><BellRing size={20} /> Solicitações</Link>
                     <Link to="/collections" style={getLinkStyle('/collections')}><CheckCircle size={20} /> Coletas</Link>
                     {isAdmin && <Link to="/reports" style={getLinkStyle('/reports')}><BarChart3 size={20} /> Relatórios</Link>}
                     {isAdmin && <Link to="/users" style={getLinkStyle('/users')}><Users size={20} /> Equipe</Link>}
@@ -117,6 +119,7 @@ const Layout = ({ children }) => {
                             {[
                                 { to: '/', icon: <Home size={20} />, label: 'Dashboard' },
                                 { to: '/clients', icon: <Users size={20} />, label: 'Clientes' },
+                                { to: '/requests', icon: <BellRing size={20} />, label: 'Solicitações' },
                                 { to: '/collections', icon: <CheckCircle size={20} />, label: 'Coletas' },
                                 isAdmin && { to: '/reports', icon: <BarChart3 size={20} />, label: 'Relatórios' },
                                 isAdmin && { to: '/users', icon: <Users size={20} />, label: 'Equipe' },
@@ -180,6 +183,7 @@ function App() {
                                     <Route path="/clients/new" element={<ClientFormPage />} />
                                     <Route path="/clients/:id" element={<ClientDetailPage />} />
                                     <Route path="/clients/:id/edit" element={<ClientFormPage />} />
+                                    <Route path="/requests" element={<RequestsPage />} />
                                     <Route path="/collections" element={<CollectionsPage />} />
                                     <Route path="/reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
                                     <Route path="/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
