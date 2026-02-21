@@ -1,5 +1,6 @@
-const { Client, CollectionRequest } = require('../models');
+const { Client } = require('../models');
 const { Op } = require('sequelize');
+const QueueService = require('../services/QueueService');
 
 exports.handleEvolutionWebhook = async (req, res) => {
     try {
@@ -45,26 +46,8 @@ exports.handleEvolutionWebhook = async (req, res) => {
             });
 
             if (client) {
-                // Determine if we should record it. For now, any message creates a request
-                // In the future, we could check for specific keywords like `bombona`, `cheia`, etc.
-                const keywords = ['bombona', 'cheio', 'cheia', 'coleta', 'coletar', 'tambor'];
-                const textLower = textContent.toLowerCase();
-                const hasKeyword = keywords.some(kw => textLower.includes(kw));
-
-                // If you only want to register when they say specific things, use `if (hasKeyword)`
-                // For a more robust first version, we'll log it if it has a keyword
-                if (hasKeyword) {
-                    await CollectionRequest.create({
-                        clientId: client.id,
-                        message: textContent,
-                        status: 'PENDING'
-                    });
-                    console.log(`[Webhook] Created collection request for Client ID ${client.id}`);
-
-                    // TODO: Optionally, use Evolution API to send a confirmation back asking them to wait
-                } else {
-                    console.log(`[Webhook] Ignored message from Client ${client.id} - No relevant keywords.`);
-                }
+                // Instantly add to our in-memory queue to be processed by the LLM in background
+                QueueService.add(client.id, textContent);
             } else {
                 console.log(`[Webhook] Unregistered phone number: ${rawNumber}`);
             }
