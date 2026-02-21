@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Home, Users, CheckCircle, BarChart3, LogOut, Menu, Truck, Settings } from 'lucide-react';
 import ClientsPage from './pages/ClientsPage';
 import ClientFormPage from './pages/ClientFormPage';
@@ -16,7 +16,8 @@ import LoginPage from './pages/LoginPage';
 const Layout = ({ children }) => {
     const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
     const location = useLocation();
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
+    const isAdmin = user?.role === 'admin';
 
     const isActive = (path) => {
         if (path === '/') return location.pathname === '/';
@@ -51,30 +52,16 @@ const Layout = ({ children }) => {
                 </h1>
 
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <Link to="/" style={getLinkStyle('/')}>
-                        <Home size={20} /> Dashboard
-                    </Link>
-                    <Link to="/clients" style={getLinkStyle('/clients')}>
-                        <Users size={20} /> Clientes
-                    </Link>
-                    <Link to="/collections" style={getLinkStyle('/collections')}>
-                        <CheckCircle size={20} /> Coletas
-                    </Link>
-                    <Link to="/reports" style={getLinkStyle('/reports')}>
-                        <BarChart3 size={20} /> Relatórios
-                    </Link>
-                    <Link to="/users" style={getLinkStyle('/users')}>
-                        <Users size={20} /> Equipe
-                    </Link>
-                    <Link to="/route" style={getLinkStyle('/route')}>
-                        <Truck size={20} /> Roteirização
-                    </Link>
+                    <Link to="/" style={getLinkStyle('/')}><Home size={20} /> Dashboard</Link>
+                    <Link to="/clients" style={getLinkStyle('/clients')}><Users size={20} /> Clientes</Link>
+                    <Link to="/collections" style={getLinkStyle('/collections')}><CheckCircle size={20} /> Coletas</Link>
+                    {isAdmin && <Link to="/reports" style={getLinkStyle('/reports')}><BarChart3 size={20} /> Relatórios</Link>}
+                    {isAdmin && <Link to="/users" style={getLinkStyle('/users')}><Users size={20} /> Equipe</Link>}
+                    <Link to="/route" style={getLinkStyle('/route')}><Truck size={20} /> Roteirização</Link>
                 </nav>
 
                 <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <Link to="/settings" style={getLinkStyle('/settings')}>
-                        <Settings size={20} /> Configurações
-                    </Link>
+                    {isAdmin && <Link to="/settings" style={getLinkStyle('/settings')}><Settings size={20} /> Configurações</Link>}
                     <button onClick={logout} style={{
                         width: '100%',
                         padding: '0.75rem',
@@ -131,11 +118,11 @@ const Layout = ({ children }) => {
                                 { to: '/', icon: <Home size={20} />, label: 'Dashboard' },
                                 { to: '/clients', icon: <Users size={20} />, label: 'Clientes' },
                                 { to: '/collections', icon: <CheckCircle size={20} />, label: 'Coletas' },
-                                { to: '/reports', icon: <BarChart3 size={20} />, label: 'Relatórios' },
-                                { to: '/users', icon: <Users size={20} />, label: 'Equipe' },
+                                isAdmin && { to: '/reports', icon: <BarChart3 size={20} />, label: 'Relatórios' },
+                                isAdmin && { to: '/users', icon: <Users size={20} />, label: 'Equipe' },
                                 { to: '/route', icon: <Truck size={20} />, label: 'Roteirização' },
-                                { to: '/settings', icon: <Settings size={20} />, label: 'Configurações' },
-                            ].map(item => (
+                                isAdmin && { to: '/settings', icon: <Settings size={20} />, label: 'Configurações' },
+                            ].filter(Boolean).map(item => (
                                 <Link key={item.to} to={item.to} style={getLinkStyle(item.to)} onClick={() => setMobileMenuOpen(false)}>
                                     {item.icon} {item.label}
                                 </Link>
@@ -166,8 +153,14 @@ const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
 
     if (loading) return <div>Carregando...</div>;
-    if (!user) return <LoginPage />; // Or Navigate to login
+    if (!user) return <LoginPage />;
 
+    return children;
+};
+
+const AdminRoute = ({ children }) => {
+    const { user } = useAuth();
+    if (user?.role !== 'admin') return <Navigate to="/clients" replace />;
     return children;
 };
 
@@ -188,10 +181,10 @@ function App() {
                                     <Route path="/clients/:id" element={<ClientDetailPage />} />
                                     <Route path="/clients/:id/edit" element={<ClientFormPage />} />
                                     <Route path="/collections" element={<CollectionsPage />} />
-                                    <Route path="/reports" element={<ReportsPage />} />
-                                    <Route path="/users" element={<UsersPage />} />
+                                    <Route path="/reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
+                                    <Route path="/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
                                     <Route path="/route" element={<RoutePage />} />
-                                    <Route path="/settings" element={<SettingsPage />} />
+                                    <Route path="/settings" element={<AdminRoute><SettingsPage /></AdminRoute>} />
                                 </Routes>
                             </Layout>
                         </ProtectedRoute>

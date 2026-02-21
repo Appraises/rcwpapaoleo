@@ -167,7 +167,7 @@ const ClientFormPage = () => {
                 {error && <div style={{ backgroundColor: '#fee2e2', color: 'var(--color-error)', padding: '1rem', borderRadius: 'var(--border-radius)', marginBottom: '1.5rem' }}>{error}</div>}
 
                 <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1.5rem' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Razão Social *</label>
                             <input
@@ -191,7 +191,7 @@ const ClientFormPage = () => {
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>CPF ou CNPJ *</label>
                             <input
@@ -216,7 +216,7 @@ const ClientFormPage = () => {
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Logradouro (Rua/Av) *</label>
                             <input
@@ -243,7 +243,7 @@ const ClientFormPage = () => {
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Bairro *</label>
                             <input
@@ -267,7 +267,7 @@ const ClientFormPage = () => {
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Cidade *</label>
                             <input
@@ -306,7 +306,7 @@ const ClientFormPage = () => {
                         />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Preço de Compra (R$/L)</label>
                             <input

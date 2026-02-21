@@ -37,7 +37,7 @@ const CollectionsPage = () => {
 
     return (
         <div className="container" style={{ padding: '2rem 1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h2>Todas as Coletas</h2>
                 <button onClick={() => setIsModalOpen(true)} style={{
                     backgroundColor: 'var(--color-primary)',

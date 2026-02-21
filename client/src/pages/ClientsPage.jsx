@@ -40,7 +40,7 @@ const ClientsPage = () => {
 
     return (
         <div className="container" style={{ padding: '2rem 1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h2>Clientes</h2>
                 <Link to="/clients/new" style={{
                     backgroundColor: 'var(--color-primary)',
@@ -91,7 +91,7 @@ const ClientsPage = () => {
                             <p style={{ marginBottom: '0.5rem' }}><strong>Tel:</strong> {client.phone}</p>
                             <p style={{ marginBottom: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{client.address}</p>
 
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem', flexWrap: 'wrap' }}>
                                 <Link to={`/clients/${client.id}`} style={{
                                     flex: 1,
                                     textAlign: 'center',

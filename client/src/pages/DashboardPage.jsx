@@ -127,7 +127,7 @@ const DashboardPage = () => {
                 </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
                 {/* Ranking Chart */}
                 <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-md)' }}>
                     <h3 style={{ marginBottom: '1.5rem', color: '#333', fontSize: '1.1rem' }}>Top 5 Clientes</h3>

@@ -37,7 +37,7 @@ const ReportsPage = () => {
 
     return (
         <div style={{ padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h2 style={{ fontSize: '1.8rem', color: 'var(--color-text)' }}>Relatórios de Sustentabilidade</h2>
                 <button
                     onClick={() => window.print()}
@@ -105,7 +105,7 @@ const ReportsPage = () => {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
 
                 {/* Monthly Trend Chart */}
                 <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-md)' }}>

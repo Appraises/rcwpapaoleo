@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-module.exports = (req, res, next) => {
+const authenticate = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
@@ -9,7 +9,7 @@ module.exports = (req, res, next) => {
 
     const parts = authHeader.split(' ');
 
-    if (!parts.length === 2) {
+    if (parts.length !== 2) {
         return res.status(401).json({ error: 'Token error' });
     }
 
@@ -23,6 +23,17 @@ module.exports = (req, res, next) => {
         if (err) return res.status(401).json({ error: 'Token invalid' });
 
         req.userId = decoded.id;
+        req.userRole = decoded.role;
         return next();
     });
 };
+
+const requireAdmin = (req, res, next) => {
+    if (req.userRole !== 'admin') {
+        return res.status(403).json({ error: 'Acesso restrito a administradores' });
+    }
+    return next();
+};
+
+module.exports = authenticate;
+module.exports.requireAdmin = requireAdmin;

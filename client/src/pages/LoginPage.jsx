@@ -36,7 +36,7 @@ const LoginPage = () => {
         }}>
             <div style={{
                 backgroundColor: 'white',
-                padding: '2.5rem',
+                padding: '2rem 1.5rem',
                 borderRadius: 'var(--border-radius)',
                 boxShadow: 'var(--shadow-md)',
                 width: '100%',

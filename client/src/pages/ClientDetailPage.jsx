@@ -85,7 +85,7 @@ const ClientDetailPage = () => {
                 <ArrowLeft size={16} /> Voltar para lista
             </button>
 
-            <div style={{ display: 'grid', gap: '1.5rem', md: { gridTemplateColumns: '1fr 2fr' } }}>
+            <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' }}>
 
                 {/* Client Info Card */}
                 <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-sm)', height: 'fit-content' }}>
