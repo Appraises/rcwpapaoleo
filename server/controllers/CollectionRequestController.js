@@ -11,13 +11,7 @@ class CollectionRequestController {
                 include: [
                     {
                         model: Client,
-                        attributes: ['name', 'phone', 'street', 'number', 'district', 'city', 'reference'],
-                        include: [
-                            {
-                                model: Address,
-                                attributes: ['street', 'number', 'district', 'city', 'state', 'zip', 'reference']
-                            }
-                        ]
+                        attributes: ['name', 'phone', 'street', 'number', 'district', 'city', 'reference']
                     }
                 ],
                 order: [['requestedAt', 'DESC']]
