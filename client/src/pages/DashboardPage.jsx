@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { Droplet, TrendingUp, Users, DollarSign, Settings, QrCode, RefreshCw } from 'lucide-react';
+import { Droplet, TrendingUp, Users, DollarSign, Settings, Wifi, WifiOff } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -14,8 +14,6 @@ const DashboardPage = () => {
 
     // WhatsApp Status State
     const [waStatus, setWaStatus] = useState(null);
-    const [qrCode, setQrCode] = useState(null);
-    const [loadingWa, setLoadingWa] = useState(false);
 
     const fetchStats = async () => {
         try {
@@ -49,23 +47,6 @@ const DashboardPage = () => {
         }
     };
 
-    const fetchQrCode = async () => {
-        setLoadingWa(true);
-        try {
-            const res = await api.get('/evolution/qr');
-            if (res.data?.base64) {
-                setQrCode(res.data.base64);
-            } else if (res.status === 202 || res.data?.hint) {
-                alert(res.data?.error || 'QR Code ainda não está pronto. Tente novamente em alguns segundos.');
-            }
-        } catch (error) {
-            console.error('Erro ao gerar QR Code', error);
-            const msg = error.response?.data?.error || 'Falha ao gerar QR Code da Evolution API';
-            alert(msg);
-        } finally {
-            setLoadingWa(false);
-        }
-    };
 
 
     useEffect(() => {
@@ -121,52 +102,25 @@ const DashboardPage = () => {
                 </div>
             </div>
 
-            {/* WhatsApp Integration Status (Admin Only) */}
+            {/* WhatsApp Status Badge (Admin Only) */}
             {user?.role === 'admin' && (
-                <div style={{ marginBottom: '2.5rem', backgroundColor: 'white', padding: '1.5rem', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-sm)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <QrCode size={24} color="var(--color-primary)" />
-                            <h3 style={{ fontSize: '1.2rem', color: '#333', margin: 0 }}>Inteligência Artificial & WhatsApp</h3>
-                        </div>
-                        <span style={{
-                            padding: '0.2rem 0.8rem', borderRadius: '50px', fontSize: '0.8rem', fontWeight: 'bold',
-                            backgroundColor: waStatus === 'open' ? '#dcfce7' : '#fee2e2',
-                            color: waStatus === 'open' ? '#16a34a' : '#991b1b'
-                        }}>
-                            {waStatus === 'open' ? '🟢 Conectado' : '🔴 Desconectado'}
-                        </span>
+                <div style={{ backgroundColor: 'white', padding: '1.25rem 1.5rem', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem', borderLeft: waStatus === 'open' ? '4px solid #16a34a' : '4px solid #ef4444' }}>
+                    <div style={{ padding: '0.75rem', backgroundColor: waStatus === 'open' ? '#dcfce7' : '#fee2e2', borderRadius: '50%' }}>
+                        {waStatus === 'open' ? <Wifi size={22} color="#16a34a" /> : <WifiOff size={22} color="#991b1b" />}
                     </div>
-
-                    <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                        Para que o Assistente Automático responda solicitações de clientes, o WhatsApp da empresa precisa estar conectado.
-                    </p>
-
-                    {waStatus !== 'open' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginTop: '1rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: 'var(--border-radius)' }}>
-                            {qrCode ? (
-                                <>
-                                    <p style={{ fontSize: '0.9rem', color: '#333', fontWeight: 'bold' }}>Escaneie este QR Code com o WhatsApp da Empresa:</p>
-                                    <img src={qrCode} alt="WhatsApp QR Code" style={{ width: '250px', height: '250px', borderRadius: '10px' }} />
-                                    <button
-                                        onClick={fetchWaStatus}
-                                        style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'white', border: '1px solid #ddd', borderRadius: 'var(--border-radius)', cursor: 'pointer' }}>
-                                        <RefreshCw size={16} /> Já escaneei (Atualizar Status)
-                                    </button>
-                                </>
-                            ) : (
-                                <button
-                                    onClick={fetchQrCode}
-                                    disabled={loadingWa}
-                                    style={{
-                                        padding: '0.75rem 1.5rem', backgroundColor: 'var(--color-primary)', color: 'white',
-                                        borderRadius: 'var(--border-radius)', fontWeight: 'bold', cursor: loadingWa ? 'not-allowed' : 'pointer', border: 'none'
-                                    }}>
-                                    {loadingWa ? 'Gerando...' : 'Gerar Novo QR Code'}
-                                </button>
-                            )}
-                        </div>
-                    )}
+                    <div style={{ flex: 1 }}>
+                        <p style={{ margin: 0, fontWeight: '600', fontSize: '0.95rem', color: '#1f2937' }}>WhatsApp</p>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#6b7280' }}>
+                            {waStatus === 'open' ? 'Assistente automático operante' : 'Desconectado — configure em Configurações'}
+                        </p>
+                    </div>
+                    <span style={{
+                        padding: '0.25rem 0.75rem', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 'bold',
+                        backgroundColor: waStatus === 'open' ? '#dcfce7' : '#fee2e2',
+                        color: waStatus === 'open' ? '#16a34a' : '#991b1b'
+                    }}>
+                        {waStatus === 'open' ? '● Operante' : '● Offline'}
+                    </span>
                 </div>
             )}
 

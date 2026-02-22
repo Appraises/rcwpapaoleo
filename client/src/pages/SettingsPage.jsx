@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, DollarSign, MapPin, Building2, Save, CheckCircle } from 'lucide-react';
+import { Settings, DollarSign, MapPin, Building2, Save, CheckCircle, QrCode, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -29,6 +29,11 @@ const SettingsPage = () => {
     const [companyPhone, setCompanyPhone] = useState(() => localStorage.getItem('catoleo_company_phone') || '');
     const [companySaved, setCompanySaved] = useState(false);
 
+    // WhatsApp state
+    const [waStatus, setWaStatus] = useState(null);
+    const [qrCode, setQrCode] = useState(null);
+    const [loadingWa, setLoadingWa] = useState(false);
+
     useEffect(() => {
         const fetchPrice = async () => {
             try {
@@ -42,10 +47,37 @@ const SettingsPage = () => {
         };
         if (user?.role === 'admin') {
             fetchPrice();
+            fetchWaStatus();
         } else {
             setPriceLoading(false);
         }
     }, [user]);
+
+    const fetchWaStatus = async () => {
+        try {
+            const res = await api.get('/evolution/status');
+            setWaStatus(res.data?.instance?.state || 'not_connected');
+        } catch {
+            setWaStatus('error');
+        }
+    };
+
+    const fetchQrCode = async () => {
+        setLoadingWa(true);
+        try {
+            const res = await api.get('/evolution/qr');
+            if (res.data?.base64) {
+                setQrCode(res.data.base64);
+            } else if (res.status === 202 || res.data?.hint) {
+                alert(res.data?.error || 'QR Code ainda não está pronto. Tente novamente em alguns segundos.');
+            }
+        } catch (error) {
+            const msg = error.response?.data?.error || 'Falha ao gerar QR Code';
+            alert(msg);
+        } finally {
+            setLoadingWa(false);
+        }
+    };
 
     const handleSavePrice = async (e) => {
         e.preventDefault();
@@ -201,6 +233,68 @@ const SettingsPage = () => {
                             {priceSaved ? <><CheckCircle size={16} /> Salvo!</> : <><Save size={16} /> Salvar Preço</>}
                         </button>
                     </form>
+                </div>
+            )}
+
+            {/* WhatsApp Integration — Admin only */}
+            {user?.role === 'admin' && (
+                <div style={cardStyle}>
+                    <div style={cardHeaderStyle}>
+                        <div style={iconBadgeStyle('#dcfce7')}>
+                            {waStatus === 'open' ? <Wifi size={20} color="#16a34a" /> : <WifiOff size={20} color="#991b1b" />}
+                        </div>
+                        <h3 style={cardTitleStyle}>WhatsApp & Assistente Automático</h3>
+                        <span style={{
+                            marginLeft: 'auto',
+                            padding: '0.2rem 0.7rem', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 'bold',
+                            backgroundColor: waStatus === 'open' ? '#dcfce7' : '#fee2e2',
+                            color: waStatus === 'open' ? '#16a34a' : '#991b1b'
+                        }}>
+                            {waStatus === 'open' ? '● Conectado' : '● Desconectado'}
+                        </span>
+                    </div>
+                    <p style={{ fontSize: '0.82rem', color: '#6b7280', marginBottom: '1rem', marginTop: 0 }}>
+                        Conecte o WhatsApp da empresa para que o assistente automático responda solicitações de clientes.
+                    </p>
+
+                    {waStatus === 'open' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                            <Wifi size={20} color="#16a34a" />
+                            <div>
+                                <p style={{ margin: 0, fontWeight: '600', fontSize: '0.9rem', color: '#166534' }}>WhatsApp conectado e operante!</p>
+                                <p style={{ margin: 0, fontSize: '0.78rem', color: '#15803d' }}>O assistente automático está respondendo as mensagens.</p>
+                            </div>
+                            <button onClick={fetchWaStatus} style={{ marginLeft: 'auto', padding: '0.4rem 0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: 'white', border: '1px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                                <RefreshCw size={14} /> Atualizar
+                            </button>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '1.25rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                            {qrCode ? (
+                                <>
+                                    <p style={{ fontSize: '0.9rem', color: '#333', fontWeight: 'bold', margin: 0 }}>Escaneie com o WhatsApp da Empresa:</p>
+                                    <img src={qrCode} alt="WhatsApp QR Code" style={{ width: '250px', height: '250px', borderRadius: '10px' }} />
+                                    <button
+                                        onClick={() => { setQrCode(null); fetchWaStatus(); }}
+                                        style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                                        <RefreshCw size={14} /> Já escaneei (Atualizar Status)
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    onClick={fetchQrCode}
+                                    disabled={loadingWa}
+                                    style={{
+                                        padding: '0.75rem 1.5rem', backgroundColor: 'var(--color-primary)', color: 'white',
+                                        borderRadius: '8px', fontWeight: 'bold', cursor: loadingWa ? 'not-allowed' : 'pointer', border: 'none', fontSize: '0.9rem',
+                                        display: 'flex', alignItems: 'center', gap: '0.5rem'
+                                    }}>
+                                    <QrCode size={18} />
+                                    {loadingWa ? 'Gerando...' : 'Gerar QR Code'}
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
 
