@@ -55,14 +55,18 @@ const DashboardPage = () => {
             const res = await api.get('/evolution/qr');
             if (res.data?.base64) {
                 setQrCode(res.data.base64);
+            } else if (res.status === 202 || res.data?.hint) {
+                alert(res.data?.error || 'QR Code ainda não está pronto. Tente novamente em alguns segundos.');
             }
         } catch (error) {
             console.error('Erro ao gerar QR Code', error);
-            alert('Falha ao gerar QR Code da Evolution API');
+            const msg = error.response?.data?.error || 'Falha ao gerar QR Code da Evolution API';
+            alert(msg);
         } finally {
             setLoadingWa(false);
         }
     };
+
 
     useEffect(() => {
         const loadData = async () => {
