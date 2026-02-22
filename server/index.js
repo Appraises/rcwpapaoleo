@@ -17,6 +17,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const authRoutes = require('./routes/authRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
+const evolutionRoutes = require('./routes/evolutionRoutes');
 // const authMiddleware = require('./middlewares/authMiddleware'); // Uncomment to protect routes globally or use in specific routes
 
 const seedUser = require('./seed');
@@ -38,7 +39,7 @@ app.use('/api/collection-requests', collectionRequestRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/webhooks', webhookRoutes);
-
+app.use('/api/evolution', evolutionRoutes);
 app.use('/api/public/reports', express.static(path.join(__dirname, 'public/reports')));
 
 app.get('/', (req, res) => {

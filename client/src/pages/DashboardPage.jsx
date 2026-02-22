@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { Droplet, TrendingUp, Users, DollarSign, Settings } from 'lucide-react';
+import { Droplet, TrendingUp, Users, DollarSign, Settings, QrCode, RefreshCw } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,6 +11,11 @@ const DashboardPage = () => {
     const [loading, setLoading] = useState(true);
     const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
     const [newPrice, setNewPrice] = useState('');
+
+    // WhatsApp Status State
+    const [waStatus, setWaStatus] = useState(null);
+    const [qrCode, setQrCode] = useState(null);
+    const [loadingWa, setLoadingWa] = useState(false);
 
     const fetchStats = async () => {
         try {
@@ -33,10 +38,36 @@ const DashboardPage = () => {
         }
     };
 
+    const fetchWaStatus = async () => {
+        if (user?.role !== 'admin') return;
+        try {
+            const res = await api.get('/evolution/status');
+            setWaStatus(res.data?.instance?.state || 'not_connected');
+        } catch (error) {
+            console.error('API Evolution error:', error);
+            setWaStatus('error');
+        }
+    };
+
+    const fetchQrCode = async () => {
+        setLoadingWa(true);
+        try {
+            const res = await api.get('/evolution/qr');
+            if (res.data?.base64) {
+                setQrCode(res.data.base64);
+            }
+        } catch (error) {
+            console.error('Erro ao gerar QR Code', error);
+            alert('Falha ao gerar QR Code da Evolution API');
+        } finally {
+            setLoadingWa(false);
+        }
+    };
+
     useEffect(() => {
         const loadData = async () => {
             setLoading(true);
-            await Promise.all([fetchStats(), fetchFinancials()]);
+            await Promise.all([fetchStats(), fetchFinancials(), fetchWaStatus()]);
             setLoading(false);
         };
         loadData();
@@ -85,6 +116,55 @@ const DashboardPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* WhatsApp Integration Status (Admin Only) */}
+            {user?.role === 'admin' && (
+                <div style={{ marginBottom: '2.5rem', backgroundColor: 'white', padding: '1.5rem', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-sm)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <QrCode size={24} color="var(--color-primary)" />
+                            <h3 style={{ fontSize: '1.2rem', color: '#333', margin: 0 }}>Inteligência Artificial & WhatsApp</h3>
+                        </div>
+                        <span style={{
+                            padding: '0.2rem 0.8rem', borderRadius: '50px', fontSize: '0.8rem', fontWeight: 'bold',
+                            backgroundColor: waStatus === 'open' ? '#dcfce7' : '#fee2e2',
+                            color: waStatus === 'open' ? '#16a34a' : '#991b1b'
+                        }}>
+                            {waStatus === 'open' ? '🟢 Conectado' : '🔴 Desconectado'}
+                        </span>
+                    </div>
+
+                    <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                        Para que o Assistente Automático responda solicitações de clientes, o WhatsApp da empresa precisa estar conectado.
+                    </p>
+
+                    {waStatus !== 'open' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginTop: '1rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: 'var(--border-radius)' }}>
+                            {qrCode ? (
+                                <>
+                                    <p style={{ fontSize: '0.9rem', color: '#333', fontWeight: 'bold' }}>Escaneie este QR Code com o WhatsApp da Empresa:</p>
+                                    <img src={qrCode} alt="WhatsApp QR Code" style={{ width: '250px', height: '250px', borderRadius: '10px' }} />
+                                    <button
+                                        onClick={fetchWaStatus}
+                                        style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'white', border: '1px solid #ddd', borderRadius: 'var(--border-radius)', cursor: 'pointer' }}>
+                                        <RefreshCw size={16} /> Já escaneei (Atualizar Status)
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    onClick={fetchQrCode}
+                                    disabled={loadingWa}
+                                    style={{
+                                        padding: '0.75rem 1.5rem', backgroundColor: 'var(--color-primary)', color: 'white',
+                                        borderRadius: 'var(--border-radius)', fontWeight: 'bold', cursor: loadingWa ? 'not-allowed' : 'pointer', border: 'none'
+                                    }}>
+                                    {loadingWa ? 'Gerando...' : 'Gerar Novo QR Code'}
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Financial Section (Admin Only) */}
             {user?.role === 'admin' && financials && (
