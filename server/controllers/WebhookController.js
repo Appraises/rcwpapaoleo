@@ -4,47 +4,74 @@ const QueueService = require('../services/QueueService');
 
 exports.handleEvolutionWebhook = async (req, res) => {
     try {
-        // Log payload for debugging during development
-        console.log('--- Webhook Received ---');
-        console.log(JSON.stringify(req.body, null, 2));
+        console.log('==========================================================');
+        console.log('[Webhook] 🟢 WEBHOOK HIT! Received at', new Date().toISOString());
+        console.log('[Webhook] Method:', req.method);
+        console.log('[Webhook] Headers:', JSON.stringify(req.headers, null, 2));
+        console.log('[Webhook] Body (raw):', JSON.stringify(req.body, null, 2));
+        console.log('==========================================================');
 
-        // Evolution API standard payload check
-        // Assuming the webhook event is "messages.upsert"
         const event = req.body.event;
-        if (event !== 'messages.upsert') {
-            return res.status(200).json({ message: 'Event ignored' });
+        console.log(`[Webhook] Event type received: "${event}"`);
+
+        // Accept both lowercase and uppercase event names for compatibility
+        const validEvents = ['messages.upsert', 'MESSAGES_UPSERT'];
+        if (!validEvents.includes(event)) {
+            console.log(`[Webhook] ⚠️ Event "${event}" is NOT a message event. Ignoring.`);
+            return res.status(200).json({ message: 'Event ignored', receivedEvent: event });
         }
 
-        const messages = req.body.data?.messages || [];
+        console.log('[Webhook] ✅ Event is a valid message event! Processing...');
+
+        // Try multiple payload shapes from different Evolution API versions
+        const messages = req.body.data?.messages || req.body.data || [];
+        console.log(`[Webhook] Found ${Array.isArray(messages) ? messages.length : 'N/A (not array)'} message(s) in payload`);
+
+        if (!Array.isArray(messages)) {
+            console.log('[Webhook] ⚠️ messages is not an array. Full data:', JSON.stringify(req.body.data, null, 2));
+            return res.status(200).json({ success: true, note: 'data.messages was not an array' });
+        }
 
         for (const msg of messages) {
-            // Ignore fromMe messages (messages sent by the bot/system itself)
-            if (msg.key.fromMe) continue;
+            console.log('[Webhook] Processing message:', JSON.stringify(msg, null, 2).substring(0, 500));
+
+            if (!msg.key) {
+                console.log('[Webhook] ⚠️ Message has no .key property, skipping');
+                continue;
+            }
+
+            if (msg.key.fromMe) {
+                console.log('[Webhook] ⏩ Skipping fromMe message');
+                continue;
+            }
 
             const remoteJid = msg.key.remoteJid;
-            // Example: 5588999999999@s.whatsapp.net
-            // We need to extract the raw number
-            if (!remoteJid || !remoteJid.includes('@s.whatsapp.net')) continue;
+            console.log(`[Webhook] remoteJid: ${remoteJid}`);
+
+            if (!remoteJid || !remoteJid.includes('@s.whatsapp.net')) {
+                console.log('[Webhook] ⏩ Skipping non-individual chat (group or broadcast)');
+                continue;
+            }
 
             const rawNumber = remoteJid.split('@')[0];
+            console.log(`[Webhook] Raw phone number extracted: ${rawNumber}`);
 
-            // Text content (can be conversation or extendedTextMessage depending on the message type)
             const textContent = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+            console.log(`[Webhook] Text content: "${textContent}"`);
 
-            // Try to find a matching client in the database.
-            // Because phones in the DB might be formatted (e.g. "(79) 99838-9263") or raw ("79998389263"),
-            // a simple LIKE query is unreliable. We will fetch clients and compare cleaned numbers.
             const lastEight = rawNumber.slice(-8);
+            console.log(`[Webhook] Last 8 digits for matching: ${lastEight}`);
 
-            // Fetch all clients (if list is huge this could be optimized, but fine for now)
             const allClients = await Client.findAll({
                 attributes: ['id', 'phone']
             });
+            console.log(`[Webhook] Total clients in DB: ${allClients.length}`);
 
             let client = null;
             for (const c of allClients) {
                 if (!c.phone) continue;
-                const cleanedDbPhone = c.phone.replace(/\D/g, ''); // Remove everything except numbers
+                const cleanedDbPhone = c.phone.replace(/\D/g, '');
+                console.log(`[Webhook]   Comparing DB phone "${c.phone}" (cleaned: "${cleanedDbPhone}") with last8: "${lastEight}" => endsWith: ${cleanedDbPhone.endsWith(lastEight)}`);
                 if (cleanedDbPhone.endsWith(lastEight)) {
                     client = c;
                     break;
@@ -52,19 +79,22 @@ exports.handleEvolutionWebhook = async (req, res) => {
             }
 
             if (client) {
-                // Instantly add to our in-memory queue to be processed by the LLM in background
+                console.log(`[Webhook] ✅ MATCHED client id=${client.id}. Adding to queue...`);
                 QueueService.add(client.id, textContent);
             } else {
-                console.log(`[Webhook] Unregistered phone number: ${rawNumber}`);
+                console.log(`[Webhook] ❌ No matching client found for number: ${rawNumber}`);
             }
         }
 
-        // Always return 200 OK so the Evolution API knows we received it
         res.status(200).json({ success: true });
     } catch (error) {
-        console.error('Webhook Error:', error);
-        // We still return 200 to typical webhooks to prevent retries of bad data,
-        // or 500 if we want Evolution to retry later.
+        console.error('[Webhook] ❌ CRITICAL ERROR:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
+};
+
+// Simple test GET endpoint to check if the webhook route is reachable
+exports.testWebhook = (req, res) => {
+    console.log('[Webhook] 🧪 Test endpoint hit!');
+    res.json({ status: 'ok', message: 'Webhook route is reachable!', timestamp: new Date().toISOString() });
 };

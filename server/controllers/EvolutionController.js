@@ -167,13 +167,10 @@ class EvolutionController {
             const API_KEY = process.env.EVOLUTION_API_KEY;
             const INSTANCE = process.env.EVOLUTION_INSTANCE_NAME;
 
-            // Try to get explicit env webhook, or fallback to the host
-            // (e.g. host might be 'catoleo.duckdns.org')
-            let host = req.get('host');
-            let protocol = req.headers['x-forwarded-proto'] || req.protocol;
-            let defaultWebhook = `${protocol}://${host}/api/webhooks/evolution`;
-
-            // Allow override via EVOLUTION_WEBHOOK_URL in .env
+            // Evolution API runs inside Docker, so it can't reach the public domain reliably.
+            // The Docker bridge IP (172.17.0.1) is how containers reach the host machine.
+            // Override with EVOLUTION_WEBHOOK_URL in .env if needed.
+            const defaultWebhook = 'http://172.17.0.1:3001/api/webhooks/evolution';
             const webhookUrl = process.env.EVOLUTION_WEBHOOK_URL || defaultWebhook;
 
             if (!API_URL || !API_KEY || !INSTANCE) {
