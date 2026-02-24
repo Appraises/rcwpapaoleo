@@ -21,12 +21,23 @@ class GeocodingService {
         // Build multiple query variations — try most specific first, then broader
         const queries = [];
 
-        if (street && number && city && state) {
-            queries.push(`${street}, ${number}, ${district || ''}, ${city} - ${state}, Brasil`.replace(/,\s*,/g, ','));
+        // 1. Street + Number + District + City
+        if (street && number && district && city && state) {
+            queries.push(`${street}, ${number}, ${district}, ${city} - ${state}, Brasil`);
         }
+        // 2. Street + Number + City (no district)
+        if (street && number && city && state && !district) {
+            queries.push(`${street}, ${number}, ${city} - ${state}, Brasil`);
+        }
+        // 3. Street + District + City (no number)
+        if (street && district && city && state) {
+            queries.push(`${street}, ${district}, ${city} - ${state}, Brasil`);
+        }
+        // 4. Street + City (broadest street search)
         if (street && city && state) {
             queries.push(`${street}, ${city} - ${state}, Brasil`);
         }
+        // 5. District + City
         if (district && city && state) {
             queries.push(`${district}, ${city} - ${state}, Brasil`);
         }
