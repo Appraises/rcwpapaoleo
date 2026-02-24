@@ -299,7 +299,9 @@ const ClientFormPage = () => {
                 ...formData,
                 document: formData.document.replace(/\D/g, ''),
                 phone: formData.phone.replace(/\D/g, ''),
-                zip: formData.zip.replace(/\D/g, '')
+                zip: formData.zip.replace(/\D/g, ''),
+                pricePerLiter: formData.pricePerLiter ? parseFloat(formData.pricePerLiter.toString().replace(/\./g, '').replace(',', '.')) : 0,
+                averageOilLiters: formData.averageOilLiters ? parseFloat(formData.averageOilLiters.toString().replace(/\./g, '').replace(',', '.')) : 0
             };
 
             if (id) {

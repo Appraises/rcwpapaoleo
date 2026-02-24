@@ -39,6 +39,9 @@ exports.createClient = async (req, res) => {
         const clientWithAddress = await Client.findByPk(client.id, { include: Address });
         res.status(201).json(clientWithAddress);
     } catch (error) {
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).json({ error: 'Já existe um cliente cadastrado com este CPF/CNPJ.' });
+        }
         res.status(400).json({ error: error.message });
     }
 };
