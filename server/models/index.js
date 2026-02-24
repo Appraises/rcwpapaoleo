@@ -34,6 +34,7 @@ module.exports = {
     Client,
     Collection,
     SystemSetting,
+    Address,
     Report,
     CollectionRequest,
     syncDatabase,
