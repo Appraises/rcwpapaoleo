@@ -10,7 +10,7 @@ function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)
 
 // ─── Synonym dictionary for message humanization ─────────────────────
 const SYNONYMS = {
-    'Olá': ['Oi', 'E aí', 'Fala', 'Salve'],
+    'Olá': ['Oi'],
     'registrado': ['anotado', 'salvo', 'cadastrado'],
     'assistente virtual': ['sistema automático', 'robô', 'bot'],
     'avisados': ['notificados', 'informados', 'alertados'],
@@ -142,23 +142,28 @@ class EvolutionService {
     }
 
     // ─── 4. Full human-like send flow ────────────────────────────────
+    // Called AFTER markAsRead + reading pause have already happened in QueueService
     static async simulateTypingAndSend(phone, message, remoteJid) {
         try {
             // Step 1: Start "typing..."
             await this.sendPresence(remoteJid, 'composing');
 
-            // Step 2: Calculate typing time based on message length (40-80 chars/sec like a real person)
+            // Step 2: Calculate typing time proportional to message length
+            // Real mobile typing: ~5-12 chars/sec with pauses and corrections
             const charCount = message.length;
-            const typingMs = Math.max(2000, Math.min(charCount * randomInt(30, 60), 8000));
-            console.log(`[EvolutionService] ⏱️ Simulating typing for ${typingMs}ms (${charCount} chars)...`);
+            const charsPerSec = randomInt(5, 12);
+            const rawTypingMs = (charCount / charsPerSec) * 1000;
+            // Floor at 3s (even short messages take a moment), cap at 45s (don't keep them waiting forever)
+            const typingMs = Math.max(3000, Math.min(rawTypingMs, 45000));
+            console.log(`[EvolutionService] ⏱️ Typing for ${(typingMs / 1000).toFixed(1)}s (${charCount} chars at ~${charsPerSec} c/s)...`);
             await delay(typingMs);
 
             // Step 3: Stop typing
             await this.sendPresence(remoteJid, 'paused');
 
-            // Step 4: Small natural pause before "hitting send"
-            const pauseMs = randomInt(500, 1500);
-            console.log(`[EvolutionService] ⏱️ Pausing ${pauseMs}ms before sending...`);
+            // Step 4: Small natural pause before "hitting send" (reviewing the message)
+            const pauseMs = randomInt(800, 2500);
+            console.log(`[EvolutionService] ⏱️ Review pause ${pauseMs}ms before sending...`);
             await delay(pauseMs);
 
             // Step 5: Send the message
