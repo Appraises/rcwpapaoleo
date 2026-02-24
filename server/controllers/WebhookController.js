@@ -24,13 +24,17 @@ exports.handleEvolutionWebhook = async (req, res) => {
         console.log('[Webhook] ✅ Event is a valid message event! Processing...');
 
         // Try multiple payload shapes from different Evolution API versions
-        const messages = req.body.data?.messages || req.body.data || [];
-        console.log(`[Webhook] Found ${Array.isArray(messages) ? messages.length : 'N/A (not array)'} message(s) in payload`);
-
-        if (!Array.isArray(messages)) {
-            console.log('[Webhook] ⚠️ messages is not an array. Full data:', JSON.stringify(req.body.data, null, 2));
-            return res.status(200).json({ success: true, note: 'data.messages was not an array' });
+        // v1: data.messages is an array | v2: data IS the message object directly
+        let messages = [];
+        if (Array.isArray(req.body.data?.messages)) {
+            messages = req.body.data.messages;
+        } else if (Array.isArray(req.body.data)) {
+            messages = req.body.data;
+        } else if (req.body.data && typeof req.body.data === 'object' && req.body.data.key) {
+            // Single message object — wrap it in an array
+            messages = [req.body.data];
         }
+        console.log(`[Webhook] Extracted ${messages.length} message(s) to process`);
 
         for (const msg of messages) {
             console.log('[Webhook] Processing message:', JSON.stringify(msg, null, 2).substring(0, 500));
