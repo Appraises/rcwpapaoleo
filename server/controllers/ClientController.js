@@ -1,4 +1,4 @@
-const { Client } = require('../models');
+const { Client, Address } = require('../models');
 const { Op } = require('sequelize');
 
 exports.createClient = async (req, res) => {
