@@ -159,6 +159,58 @@ class EvolutionController {
             return res.status(500).json({ error: error.message });
         }
     }
+
+    // 3. Set Webhook Configuration
+    async setWebhook(req, res) {
+        try {
+            const API_URL = process.env.EVOLUTION_API_URL;
+            const API_KEY = process.env.EVOLUTION_API_KEY;
+            const INSTANCE = process.env.EVOLUTION_INSTANCE_NAME;
+
+            // Try to get explicit env webhook, or fallback to the host
+            // (e.g. host might be 'catoleo.duckdns.org')
+            let host = req.get('host');
+            let protocol = req.headers['x-forwarded-proto'] || req.protocol;
+            let defaultWebhook = `${protocol}://${host}/api/webhooks/evolution`;
+
+            // Allow override via EVOLUTION_WEBHOOK_URL in .env
+            const webhookUrl = process.env.EVOLUTION_WEBHOOK_URL || defaultWebhook;
+
+            if (!API_URL || !API_KEY || !INSTANCE) {
+                return res.status(500).json({ error: 'Evolution API credentials not configured.' });
+            }
+
+            console.log(`[EvolutionController] Setting webhook for ${INSTANCE} to ${webhookUrl}`);
+
+            const response = await fetchWithTimeout(
+                `${API_URL}/webhook/set/${INSTANCE}`,
+                {
+                    method: 'POST',
+                    headers: { 'apikey': API_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        webhook: {
+                            url: webhookUrl,
+                            byEvents: false,
+                            base64: false,
+                            events: ["MESSAGES_UPSERT"]
+                        }
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Failed to set webhook (${response.status}): ${errText}`);
+            }
+
+            const data = await response.json();
+            return res.json({ success: true, webhookUrl, data });
+
+        } catch (error) {
+            console.error('[EvolutionController] Error setting webhook:', error.message);
+            return res.status(500).json({ error: error.message });
+        }
+    }
 }
 
 module.exports = new EvolutionController();

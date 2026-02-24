@@ -1,9 +1,9 @@
-const { CollectionRequest, Client, Address } = require('../models');
 
 class CollectionRequestController {
     // List all pending collection requests for the collectors
     static async getPendingRequests(req, res) {
         try {
+            const { CollectionRequest, Client } = require('../models');
             const requests = await CollectionRequest.findAll({
                 where: {
                     status: 'PENDING'
@@ -27,6 +27,7 @@ class CollectionRequestController {
     // Update status (e.g., from PENDING to COMPLETED or CANCELLED)
     static async updateRequestStatus(req, res) {
         try {
+            const { CollectionRequest } = require('../models');
             const { id } = req.params;
             const { status } = req.body;
 

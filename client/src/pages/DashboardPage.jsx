@@ -63,7 +63,16 @@ const DashboardPage = () => {
         }
     };
 
-
+    const handleSyncWebhook = async () => {
+        if (!window.confirm('Tem certeza que deseja forçar a sincronização do Webhook do WhatsApp?')) return;
+        try {
+            const res = await api.post('/evolution/webhook/set');
+            alert(`Webhook configurado com sucesso!\nNova Rota: ${res.data.webhookUrl}`);
+        } catch (error) {
+            console.error('Erro ao configurar webhook:', error);
+            alert('Falha ao configurar webhook. Você definiu a variável EVOLUTION_WEBHOOK_URL ou o servidor consegue deduzir a URL?');
+        }
+    };
 
     useEffect(() => {
         const loadData = async () => {
@@ -137,6 +146,12 @@ const DashboardPage = () => {
                     }}>
                         {waStatus === 'open' ? '● Operante' : '● Offline'}
                     </span>
+                    <button onClick={handleSyncWebhook} style={{
+                        marginLeft: 'auto', padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)',
+                        backgroundColor: '#1e40af', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600'
+                    }}>
+                        Sincronizar Webhook (Bot)
+                    </button>
                 </div>
             )}
 
