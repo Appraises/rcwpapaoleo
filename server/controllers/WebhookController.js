@@ -32,18 +32,24 @@ exports.handleEvolutionWebhook = async (req, res) => {
             const textContent = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
 
             // Try to find a matching client in the database.
-            // Brazilian phones are tricky because of the '9' digit. 
-            // So we'll try to match using LIKE, searching for the last 8-10 digits.
-            // Let's grab the last 8 digits as a safe fallback for local numbers
+            // Because phones in the DB might be formatted (e.g. "(79) 99838-9263") or raw ("79998389263"),
+            // a simple LIKE query is unreliable. We will fetch clients and compare cleaned numbers.
             const lastEight = rawNumber.slice(-8);
 
-            const client = await Client.findOne({
-                where: {
-                    phone: {
-                        [Op.like]: `%${lastEight}%`
-                    }
-                }
+            // Fetch all clients (if list is huge this could be optimized, but fine for now)
+            const allClients = await Client.findAll({
+                attributes: ['id', 'phone']
             });
+
+            let client = null;
+            for (const c of allClients) {
+                if (!c.phone) continue;
+                const cleanedDbPhone = c.phone.replace(/\D/g, ''); // Remove everything except numbers
+                if (cleanedDbPhone.endsWith(lastEight)) {
+                    client = c;
+                    break;
+                }
+            }
 
             if (client) {
                 // Instantly add to our in-memory queue to be processed by the LLM in background
