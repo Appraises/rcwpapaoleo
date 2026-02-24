@@ -26,13 +26,8 @@ class EvolutionService {
 
             const body = {
                 number: formattedPhone,
-                textMessage: {
-                    text: message
-                },
-                options: {
-                    delay: 1200, // Make it look a bit natural
-                    presence: 'composing' // Shows "typing..." before sending
-                }
+                text: message,
+                delay: 1200
             };
 
             console.log(`[EvolutionService] Sending reply to ${formattedPhone}...`);
