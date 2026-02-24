@@ -11,6 +11,9 @@ const DashboardPage = () => {
     const [loading, setLoading] = useState(true);
     const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
     const [newPrice, setNewPrice] = useState('');
+    const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
+    const [systemLogs, setSystemLogs] = useState('');
+    const [loadingLogs, setLoadingLogs] = useState(false);
 
     // WhatsApp Status State
     const [waStatus, setWaStatus] = useState(null);
@@ -44,6 +47,19 @@ const DashboardPage = () => {
         } catch (error) {
             console.error('API Evolution error:', error);
             setWaStatus('error');
+        }
+    };
+
+    const fetchLogs = async () => {
+        setLoadingLogs(true);
+        try {
+            const res = await api.get('/dashboard/logs');
+            setSystemLogs(res.data.logs);
+        } catch (error) {
+            console.error('Error fetching logs:', error);
+            setSystemLogs('Erro ao carregar os logs do servidor.');
+        } finally {
+            setLoadingLogs(false);
         }
     };
 
@@ -128,14 +144,23 @@ const DashboardPage = () => {
             {user?.role === 'admin' && financials && (
                 <div style={{ marginBottom: '3rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h3 style={{ fontSize: '1.4rem', color: '#333' }}>Financeiro</h3>
-                        <button onClick={() => setIsPriceModalOpen(true)} style={{
-                            display: 'flex', alignItems: 'center', gap: '0.5rem',
-                            padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)',
-                            backgroundColor: 'white', border: '1px solid #ddd', cursor: 'pointer'
-                        }}>
-                            <Settings size={16} /> Configurar Preço de Venda
-                        </button>
+                        <h3 style={{ fontSize: '1.4rem', color: '#333' }}>Financeiro & Sistema</h3>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button onClick={() => { setIsLogsModalOpen(true); fetchLogs(); }} style={{
+                                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)',
+                                backgroundColor: '#1f2937', color: 'white', border: '1px solid #1f2937', cursor: 'pointer'
+                            }}>
+                                <Settings size={16} /> Ver Logs do Sistema
+                            </button>
+                            <button onClick={() => setIsPriceModalOpen(true)} style={{
+                                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)',
+                                backgroundColor: 'white', border: '1px solid #ddd', cursor: 'pointer'
+                            }}>
+                                <Settings size={16} /> Configurar Preço de Venda
+                            </button>
+                        </div>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
@@ -240,6 +265,44 @@ const DashboardPage = () => {
                                 }}>Salvar</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Logs Modal */}
+            {isLogsModalOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 1000, padding: '1rem'
+                }}>
+                    <div style={{
+                        backgroundColor: 'white', borderRadius: 'var(--border-radius)',
+                        width: '100%', maxWidth: '800px', height: '80vh', display: 'flex', flexDirection: 'column',
+                        padding: '1.5rem', boxShadow: 'var(--shadow-md)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ margin: 0 }}>Logs do Servidor (PM2)</h3>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button onClick={fetchLogs} disabled={loadingLogs} style={{
+                                    padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)',
+                                    background: 'var(--color-primary)', color: 'white', fontSize: '0.9rem'
+                                }}>{loadingLogs ? 'Atualizando...' : 'Atualizar'}</button>
+                                <button onClick={() => setIsLogsModalOpen(false)} style={{
+                                    padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)',
+                                    background: '#f5f5f5', color: 'var(--color-text)', fontSize: '0.9rem'
+                                }}>Fechar</button>
+                            </div>
+                        </div>
+
+                        <div style={{
+                            flex: 1, backgroundColor: '#1e1e1e', color: '#00ff00',
+                            padding: '1rem', borderRadius: 'var(--border-radius)',
+                            fontFamily: 'monospace', fontSize: '0.85rem',
+                            overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all'
+                        }}>
+                            {loadingLogs ? 'Carregando logs...' : (systemLogs || 'Nenhum log encontrado. O sistema pm2 pode não estar rodando neste formato.')}
+                        </div>
                     </div>
                 </div>
             )}

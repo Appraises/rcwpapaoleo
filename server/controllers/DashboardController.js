@@ -1,5 +1,6 @@
 const { Client, Collection } = require('../models');
 const { Op, fn, col, literal } = require('sequelize');
+const { exec } = require('child_process');
 
 exports.getDashboardStats = async (req, res) => {
     try {
@@ -81,6 +82,21 @@ exports.getDashboardStats = async (req, res) => {
 
     } catch (error) {
         console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.getServerLogs = async (req, res) => {
+    try {
+        // Quick debugging route to view PM2 logs on the frontend.
+        // It runs tail -n 100 on the pm2 logs.
+        exec('pm2 logs catoleo --lines 100 --nostream', (error, stdout, stderr) => {
+            if (error) {
+                return res.status(500).json({ error: 'Failed to fetch logs', details: stderr || error.message });
+            }
+            res.json({ logs: stdout });
+        });
+    } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
