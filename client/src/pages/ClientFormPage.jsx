@@ -208,8 +208,8 @@ const ClientFormPage = () => {
                     setFormData({
                         name: client.name,
                         tradeName: client.tradeName || '',
-                        document: client.document,
-                        phone: client.phone,
+                        document: client.document ? formatDocument(client.document) : '',
+                        phone: client.phone ? formatPhone(client.phone) : '',
                         street: addressData.street || '',
                         number: addressData.number || '',
                         district: addressData.district || '',
@@ -271,10 +271,17 @@ const ClientFormPage = () => {
         }
 
         try {
+            const cleanedData = {
+                ...formData,
+                document: formData.document.replace(/\D/g, ''),
+                phone: formData.phone.replace(/\D/g, ''),
+                zip: formData.zip.replace(/\D/g, '')
+            };
+
             if (id) {
-                await api.put(`/clients/${id}`, formData);
+                await api.put(`/clients/${id}`, cleanedData);
             } else {
-                await api.post('/clients', formData);
+                await api.post('/clients', cleanedData);
             }
             navigate('/clients');
         } catch (err) {

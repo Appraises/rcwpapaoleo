@@ -3,6 +3,37 @@ import { Link } from 'react-router-dom';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import api from '../api/axios';
 
+const formatDocument = (value) => {
+    if (!value) return '';
+    let v = value.replace(/\D/g, '');
+    if (v.length <= 11) {
+        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+        v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    } else {
+        v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+        v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        v = v.replace(/(\d{4})(\d)/, '$1-$2');
+        if (v.length > 18) v = v.substring(0, 18);
+    }
+    return v;
+};
+
+const formatPhone = (value) => {
+    if (!value) return '';
+    let v = value.replace(/\D/g, '');
+    if (v.length <= 10) {
+        v = v.replace(/(\d{2})(\d)/, '($1) $2');
+        v = v.replace(/(\d{4})(\d)/, '$1-$2');
+    } else {
+        v = v.replace(/(\d{2})(\d)/, '($1) $2');
+        v = v.replace(/(\d{5})(\d)/, '$1-$2');
+        if (v.length > 15) v = v.substring(0, 15);
+    }
+    return v;
+};
+
 const ClientsPage = () => {
     const [clients, setClients] = useState([]);
     const [search, setSearch] = useState('');
@@ -87,8 +118,8 @@ const ClientsPage = () => {
                             borderLeft: '4px solid var(--color-primary)'
                         }}>
                             <h3 style={{ marginBottom: '0.5rem', fontSize: '1.2rem' }}>{client.name}</h3>
-                            <p style={{ color: 'var(--color-text-light)', marginBottom: '0.5rem' }}>{client.document}</p>
-                            <p style={{ marginBottom: '0.5rem' }}><strong>Tel:</strong> {client.phone}</p>
+                            <p style={{ color: 'var(--color-text-light)', marginBottom: '0.5rem' }}>{formatDocument(client.document)}</p>
+                            <p style={{ marginBottom: '0.5rem' }}><strong>Tel:</strong> {formatPhone(client.phone)}</p>
                             <p style={{ marginBottom: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{client.address}</p>
 
                             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem', flexWrap: 'wrap' }}>

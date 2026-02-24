@@ -28,6 +28,37 @@ const calculateContainers = (liters) => {
     return { containers, totalCapacity, totalContainers };
 };
 
+const formatDocument = (value) => {
+    if (!value) return '';
+    let v = value.replace(/\D/g, '');
+    if (v.length <= 11) {
+        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+        v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    } else {
+        v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+        v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        v = v.replace(/(\d{4})(\d)/, '$1-$2');
+        if (v.length > 18) v = v.substring(0, 18);
+    }
+    return v;
+};
+
+const formatPhone = (value) => {
+    if (!value) return '';
+    let v = value.replace(/\D/g, '');
+    if (v.length <= 10) {
+        v = v.replace(/(\d{2})(\d)/, '($1) $2');
+        v = v.replace(/(\d{4})(\d)/, '$1-$2');
+    } else {
+        v = v.replace(/(\d{2})(\d)/, '($1) $2');
+        v = v.replace(/(\d{5})(\d)/, '$1-$2');
+        if (v.length > 15) v = v.substring(0, 15);
+    }
+    return v;
+};
+
 const ClientDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -98,8 +129,8 @@ const ClientDetailPage = () => {
                     </div>
 
                     <div style={{ display: 'grid', gap: '0.75rem', color: '#555' }}>
-                        <p><strong>CNPJ/CPF:</strong> {client.document}</p>
-                        <p><strong>Telefone:</strong> {client.phone}</p>
+                        <p><strong>CNPJ/CPF:</strong> {formatDocument(client.document)}</p>
+                        <p><strong>Telefone:</strong> {formatPhone(client.phone)}</p>
                         <p><strong>Endereço:</strong> {client.address}</p>
                         {client.observations && <p><strong>Obs:</strong> {client.observations}</p>}
 
