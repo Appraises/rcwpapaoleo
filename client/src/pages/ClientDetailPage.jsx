@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit, Trash2, Package, Droplet, Calendar, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Package, Droplet, Calendar, TrendingUp, MapPin } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../api/axios';
 import CollectionModal from '../components/CollectionModal';
@@ -188,6 +188,22 @@ const ClientDetailPage = () => {
                         <p><strong>CNPJ/CPF:</strong> {formatDocument(client.document)}</p>
                         <p><strong>Telefone:</strong> {formatPhone(client.phone)}</p>
                         <p><strong>Endereço:</strong> {client.address}</p>
+
+                        {(client.latitude && client.longitude) && (
+                            <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${client.latitude},${client.longitude}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                                    color: '#0284c7', fontSize: '0.85rem', textDecoration: 'none',
+                                    marginTop: '-0.25rem', marginBottom: '0.25rem'
+                                }}
+                            >
+                                <MapPin size={14} /> Abrir no Google Maps (Debug)
+                            </a>
+                        )}
+
                         {client.observations && <p><strong>Obs:</strong> {client.observations}</p>}
 
                         {client.averageOilLiters > 0 && (
