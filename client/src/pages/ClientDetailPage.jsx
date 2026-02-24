@@ -7,8 +7,9 @@ import CollectionModal from '../components/CollectionModal';
 
 const CONTAINER_SIZES = [200, 100, 60, 50, 30];
 
-const calculateContainers = (liters) => {
-    if (!liters || liters <= 0) return null;
+const calculateContainers = (rawLiters) => {
+    const liters = parseFloat(rawLiters);
+    if (!liters || isNaN(liters) || liters <= 0) return null;
     const containers = [];
     let remaining = liters;
     for (const size of CONTAINER_SIZES) {
@@ -29,8 +30,9 @@ const calculateContainers = (liters) => {
     return { containers, totalCapacity, totalContainers };
 };
 
-const formatDocument = (value) => {
-    if (!value) return '';
+const formatDocument = (val) => {
+    if (!val) return '';
+    const value = val.toString();
     let v = value.replace(/\D/g, '');
     if (v.length <= 11) {
         v = v.replace(/(\d{3})(\d)/, '$1.$2');
@@ -46,8 +48,9 @@ const formatDocument = (value) => {
     return v;
 };
 
-const formatPhone = (value) => {
-    if (!value) return '';
+const formatPhone = (val) => {
+    if (!val) return '';
+    const value = val.toString();
     let v = value.replace(/\D/g, '');
     if (v.length <= 10) {
         v = v.replace(/(\d{2})(\d)/, '($1) $2');
