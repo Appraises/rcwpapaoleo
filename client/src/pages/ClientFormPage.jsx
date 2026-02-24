@@ -146,6 +146,8 @@ const ClientFormPage = () => {
     const [docError, setDocError] = useState('');
     const [geocoding, setGeocoding] = useState(false);
     const [cepLoading, setCepLoading] = useState(false);
+    const [cities, setCities] = useState([]);
+    const [citiesLoading, setCitiesLoading] = useState(false);
 
     const handleGeocode = async () => {
         // Silent check: Only trigger if we have all necessary info
@@ -195,6 +197,28 @@ const ClientFormPage = () => {
             setCepLoading(false);
         }
     };
+
+    // Fetch cities from IBGE when state changes
+    useEffect(() => {
+        if (!formData.state) {
+            setCities([]);
+            return;
+        }
+        const fetchCities = async () => {
+            setCitiesLoading(true);
+            try {
+                const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${formData.state}/municipios?orderBy=nome`);
+                const data = await res.json();
+                setCities(data.map(m => m.nome));
+            } catch (err) {
+                console.error('Erro ao buscar cidades:', err);
+                setCities([]);
+            } finally {
+                setCitiesLoading(false);
+            }
+        };
+        fetchCities();
+    }, [formData.state]);
 
     useEffect(() => {
         if (id) {
@@ -415,15 +439,32 @@ const ClientFormPage = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Cidade *</label>
-                            <input
-                                type="text"
-                                name="city"
-                                value={formData.city || ''}
-                                onChange={handleChange}
-                                onBlur={handleGeocode}
-                                required
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
-                            />
+                            {cities.length > 0 ? (
+                                <select
+                                    name="city"
+                                    value={formData.city || ''}
+                                    onChange={handleChange}
+                                    onBlur={handleGeocode}
+                                    required
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd', backgroundColor: 'white' }}
+                                >
+                                    <option value="" disabled>{citiesLoading ? 'Carregando...' : 'Selecione a cidade'}</option>
+                                    {cities.map(c => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    type="text"
+                                    name="city"
+                                    value={formData.city || ''}
+                                    onChange={handleChange}
+                                    onBlur={handleGeocode}
+                                    required
+                                    placeholder={formData.state ? (citiesLoading ? 'Carregando cidades...' : 'Digite a cidade') : 'Selecione o estado primeiro'}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
+                                />
+                            )}
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Estado (UF) *</label>

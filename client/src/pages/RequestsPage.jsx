@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../api/axios';
-import { MessageSquare, MapPin, Phone, CheckCircle, XCircle } from 'lucide-react';
+import { MessageSquare, MapPin, Phone, CheckCircle, XCircle, Truck } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -66,12 +66,23 @@ function RequestsPage() {
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '1rem',
-                            borderLeft: '4px solid #f59e0b' // yellow indicating pending
+                            borderLeft: `4px solid ${req.status === 'DISPATCHED' ? '#3b82f6' : '#f59e0b'}`
                         }}>
                             <div>
-                                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#333' }}>
-                                    {req.Client.name}
-                                </h2>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                                    <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#333', margin: 0 }}>
+                                        {req.Client.name}
+                                    </h2>
+                                    <span style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                                        padding: '0.15rem 0.5rem', borderRadius: '1rem',
+                                        fontSize: '0.7rem', fontWeight: '600',
+                                        backgroundColor: req.status === 'DISPATCHED' ? '#dbeafe' : '#fef3c7',
+                                        color: req.status === 'DISPATCHED' ? '#1d4ed8' : '#92400e'
+                                    }}>
+                                        {req.status === 'DISPATCHED' ? <><Truck size={12} /> Despachado</> : 'Pendente'}
+                                    </span>
+                                </div>
                                 <p style={{ color: '#666', fontSize: '0.875rem' }}>
                                     Recebido em {format(new Date(req.requestedAt), "dd/MM 'às' HH:mm", { locale: ptBR })}
                                 </p>

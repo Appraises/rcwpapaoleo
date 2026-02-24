@@ -14,13 +14,22 @@ const CollectionRequest = sequelize.define('CollectionRequest', {
         allowNull: false,
     },
     status: {
-        type: DataTypes.ENUM('PENDING', 'COMPLETED', 'CANCELLED'),
+        type: DataTypes.ENUM('PENDING', 'DISPATCHED', 'COMPLETED', 'CANCELLED'),
         defaultValue: 'PENDING',
         allowNull: false,
     },
     message: {
         type: DataTypes.TEXT,
         allowNull: true,
+    },
+    dispatchOrder: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
+    priority: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+        allowNull: false,
     },
     requestedAt: {
         type: DataTypes.DATE,

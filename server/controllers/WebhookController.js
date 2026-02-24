@@ -1,6 +1,7 @@
-const { Client } = require('../models');
+const { Client, User } = require('../models');
 const { Op } = require('sequelize');
 const QueueService = require('../services/QueueService');
+const { processCompletionMessage } = require('../services/CompletionService');
 
 exports.handleEvolutionWebhook = async (req, res) => {
     try {
@@ -66,6 +67,29 @@ exports.handleEvolutionWebhook = async (req, res) => {
             const lastEight = rawNumber.slice(-8);
             console.log(`[Webhook] Last 8 digits for matching: ${lastEight}`);
 
+            // ── Try matching as a COLLECTOR (User) first ──────────────
+            const allCollectors = await User.findAll({
+                where: { role: 'collector', phone: { [Op.ne]: null } },
+                attributes: ['id', 'name', 'phone']
+            });
+
+            let collector = null;
+            for (const u of allCollectors) {
+                const cleanedPhone = u.phone.replace(/\D/g, '');
+                if (cleanedPhone.endsWith(lastEight)) {
+                    collector = u;
+                    break;
+                }
+            }
+
+            if (collector) {
+                console.log(`[Webhook] 🚛 MATCHED COLLECTOR: ${collector.name} (id=${collector.id}). Routing to CompletionService...`);
+                // Process asynchronously, don't block the webhook
+                processCompletionMessage(collector.id, textContent, remoteJid);
+                continue;
+            }
+
+            // ── Try matching as a CLIENT ──────────────────────────────
             const allClients = await Client.findAll({
                 attributes: ['id', 'phone']
             });
@@ -86,7 +110,7 @@ exports.handleEvolutionWebhook = async (req, res) => {
                 console.log(`[Webhook] ✅ MATCHED client id=${client.id}. Adding to queue...`);
                 QueueService.add(client.id, textContent, remoteJid, msg.key.id);
             } else {
-                console.log(`[Webhook] ❌ No matching client found for number: ${rawNumber}`);
+                console.log(`[Webhook] ❌ No matching client or collector found for number: ${rawNumber}`);
             }
         }
 

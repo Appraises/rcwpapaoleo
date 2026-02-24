@@ -1,4 +1,4 @@
-const { Client, Collection } = require('../models');
+const { Client, Collection, CollectionRequest } = require('../models');
 const { Op, fn, col, literal } = require('sequelize');
 const { exec } = require('child_process');
 
@@ -73,11 +73,21 @@ exports.getDashboardStats = async (req, res) => {
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => a.name.localeCompare(b.name));
 
+        // Pending / Dispatched collection requests
+        const pendingRequestsCount = await CollectionRequest.count({
+            where: { status: 'PENDING' }
+        });
+        const dispatchedRequestsCount = await CollectionRequest.count({
+            where: { status: 'DISPATCHED' }
+        });
+
         res.json({
             totalMonth,
             totalGeneral,
             ranking,
-            chartData
+            chartData,
+            pendingRequestsCount,
+            dispatchedRequestsCount
         });
 
     } catch (error) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, DollarSign, MapPin, Building2, Save, CheckCircle, QrCode, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { Settings, DollarSign, MapPin, Building2, Save, CheckCircle, QrCode, RefreshCw, Wifi, WifiOff, Truck, Play } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,17 +11,21 @@ const SettingsPage = () => {
     const [priceLoading, setPriceLoading] = useState(true);
     const [priceSaved, setPriceSaved] = useState(false);
 
-    // Base/HQ location
-    const [baseName, setBaseName] = useState(() => localStorage.getItem('catoleo_base_name') || 'Base da Empresa');
-    const [baseLat, setBaseLat] = useState(() => {
-        const saved = localStorage.getItem('catoleo_base_lat');
-        return saved || '-10.9472';
-    });
-    const [baseLng, setBaseLng] = useState(() => {
-        const saved = localStorage.getItem('catoleo_base_lng');
-        return saved || '-37.0731';
-    });
+    // Base/HQ location (persisted in SystemSetting)
+    const [baseName, setBaseName] = useState('Base da Empresa');
+    const [baseLat, setBaseLat] = useState('-10.9472');
+    const [baseLng, setBaseLng] = useState('-37.0731');
     const [baseSaved, setBaseSaved] = useState(false);
+
+    // Dispatch config (persisted in SystemSetting)
+    const [collectors, setCollectors] = useState([]);
+    const [primaryCollectorId, setPrimaryCollectorId] = useState('');
+    const [secondaryCollectorId, setSecondaryCollectorId] = useState('');
+    const [splitThreshold, setSplitThreshold] = useState('15');
+    const [ownerPhone, setOwnerPhone] = useState('');
+    const [dispatchSaved, setDispatchSaved] = useState(false);
+    const [dispatching, setDispatching] = useState(false);
+    const [dispatchResult, setDispatchResult] = useState(null);
 
     // Company info
     const [companyName, setCompanyName] = useState(() => localStorage.getItem('catoleo_company_name') || '');
@@ -35,23 +39,51 @@ const SettingsPage = () => {
     const [loadingWa, setLoadingWa] = useState(false);
 
     useEffect(() => {
-        const fetchPrice = async () => {
-            try {
-                const response = await api.get('/dashboard/financial');
-                setSellingPrice(response.data.sellingPrice || '');
-            } catch (error) {
-                console.error('Error fetching selling price:', error);
-            } finally {
-                setPriceLoading(false);
-            }
-        };
         if (user?.role === 'admin') {
             fetchPrice();
             fetchWaStatus();
+            fetchSettings();
+            fetchCollectors();
         } else {
             setPriceLoading(false);
         }
     }, [user]);
+
+    const fetchPrice = async () => {
+        try {
+            const response = await api.get('/dashboard/financial');
+            setSellingPrice(response.data.sellingPrice || '');
+        } catch (error) {
+            console.error('Error fetching selling price:', error);
+        } finally {
+            setPriceLoading(false);
+        }
+    };
+
+    const fetchSettings = async () => {
+        try {
+            const res = await api.get('/settings?keys=base_lat,base_lng,base_name,dispatch_primary_collector_id,dispatch_secondary_collector_id,dispatch_split_threshold,dispatch_owner_phone');
+            const s = res.data;
+            if (s.base_name) setBaseName(s.base_name);
+            if (s.base_lat) setBaseLat(s.base_lat);
+            if (s.base_lng) setBaseLng(s.base_lng);
+            if (s.dispatch_primary_collector_id) setPrimaryCollectorId(s.dispatch_primary_collector_id);
+            if (s.dispatch_secondary_collector_id) setSecondaryCollectorId(s.dispatch_secondary_collector_id);
+            if (s.dispatch_split_threshold) setSplitThreshold(s.dispatch_split_threshold);
+            if (s.dispatch_owner_phone) setOwnerPhone(s.dispatch_owner_phone);
+        } catch (error) {
+            console.error('Error fetching settings:', error);
+        }
+    };
+
+    const fetchCollectors = async () => {
+        try {
+            const res = await api.get('/auth/users');
+            setCollectors(res.data.filter(u => u.role === 'collector' && u.phone));
+        } catch (error) {
+            console.error('Error fetching collectors:', error);
+        }
+    };
 
     const fetchWaStatus = async () => {
         try {
@@ -91,13 +123,56 @@ const SettingsPage = () => {
         }
     };
 
-    const handleSaveBase = (e) => {
+    const handleSaveBase = async (e) => {
         e.preventDefault();
-        localStorage.setItem('catoleo_base_name', baseName);
-        localStorage.setItem('catoleo_base_lat', baseLat);
-        localStorage.setItem('catoleo_base_lng', baseLng);
-        setBaseSaved(true);
-        setTimeout(() => setBaseSaved(false), 2500);
+        try {
+            await api.put('/settings', {
+                base_name: baseName,
+                base_lat: baseLat,
+                base_lng: baseLng
+            });
+            // Also keep localStorage in sync for RoutePage
+            localStorage.setItem('catoleo_base_name', baseName);
+            localStorage.setItem('catoleo_base_lat', baseLat);
+            localStorage.setItem('catoleo_base_lng', baseLng);
+            setBaseSaved(true);
+            setTimeout(() => setBaseSaved(false), 2500);
+        } catch (error) {
+            console.error('Error saving base:', error);
+            alert('Erro ao salvar base.');
+        }
+    };
+
+    const handleSaveDispatch = async (e) => {
+        e.preventDefault();
+        try {
+            await api.put('/settings', {
+                dispatch_primary_collector_id: primaryCollectorId,
+                dispatch_secondary_collector_id: secondaryCollectorId,
+                dispatch_split_threshold: splitThreshold,
+                dispatch_owner_phone: ownerPhone
+            });
+            setDispatchSaved(true);
+            setTimeout(() => setDispatchSaved(false), 2500);
+        } catch (error) {
+            console.error('Error saving dispatch config:', error);
+            alert('Erro ao salvar configurações de despacho.');
+        }
+    };
+
+    const handleManualDispatch = async () => {
+        if (!window.confirm('Deseja executar o despacho de rotas agora? Isso enviará as rotas via WhatsApp para os coletadores.')) return;
+        setDispatching(true);
+        setDispatchResult(null);
+        try {
+            const res = await api.post('/dispatch/run');
+            setDispatchResult(res.data);
+        } catch (error) {
+            console.error('Error dispatching:', error);
+            setDispatchResult({ dispatched: false, reason: error.response?.data?.error || error.message });
+        } finally {
+            setDispatching(false);
+        }
     };
 
     const handleSaveCompany = (e) => {
@@ -168,6 +243,11 @@ const SettingsPage = () => {
         outline: 'none',
         transition: 'border-color 0.2s',
         boxSizing: 'border-box',
+    };
+
+    const selectStyle = {
+        ...inputStyle,
+        backgroundColor: 'white',
     };
 
     const fieldGroupStyle = {
@@ -298,6 +378,103 @@ const SettingsPage = () => {
                 </div>
             )}
 
+            {/* Dispatch Configuration — Admin only */}
+            {user?.role === 'admin' && (
+                <div style={cardStyle}>
+                    <div style={cardHeaderStyle}>
+                        <div style={iconBadgeStyle('#dbeafe')}>
+                            <Truck size={20} color="#2563eb" />
+                        </div>
+                        <h3 style={cardTitleStyle}>Despacho Diário de Rotas</h3>
+                    </div>
+                    <p style={{ fontSize: '0.82rem', color: '#6b7280', marginBottom: '1rem', marginTop: 0 }}>
+                        Configuração do envio automático de rotas otimizadas para coletadores via WhatsApp (todos os dias às 6h).
+                    </p>
+                    <form onSubmit={handleSaveDispatch}>
+                        <div style={fieldGroupStyle}>
+                            <label style={labelStyle}>Coletador Primário</label>
+                            <select
+                                value={primaryCollectorId}
+                                onChange={(e) => setPrimaryCollectorId(e.target.value)}
+                                style={selectStyle}
+                            >
+                                <option value="">Selecionar coletador principal...</option>
+                                {collectors.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name} — {c.phone}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={fieldGroupStyle}>
+                            <label style={labelStyle}>Coletador Secundário (se muitas solicitações)</label>
+                            <select
+                                value={secondaryCollectorId}
+                                onChange={(e) => setSecondaryCollectorId(e.target.value)}
+                                style={selectStyle}
+                            >
+                                <option value="">Nenhum (apenas 1 coletador)</option>
+                                {collectors.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name} — {c.phone}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={fieldGroupStyle}>
+                            <label style={labelStyle}>Limiar para dividir rotas</label>
+                            <p style={{ fontSize: '0.78rem', color: '#9ca3af', marginTop: '0', marginBottom: '0.35rem' }}>
+                                Se tiver mais que esse número de solicitações, a rota é dividida entre 2 coletadores.
+                            </p>
+                            <input
+                                type="number"
+                                min="1"
+                                value={splitThreshold}
+                                onChange={(e) => setSplitThreshold(e.target.value)}
+                                style={{ ...inputStyle, maxWidth: '120px' }}
+                            />
+                        </div>
+                        <div style={fieldGroupStyle}>
+                            <label style={labelStyle}>WhatsApp do Dono/Admin (para relatório diário)</label>
+                            <p style={{ fontSize: '0.78rem', color: '#9ca3af', marginTop: '0', marginBottom: '0.35rem' }}>
+                                Recebe o resumo das coletas do dia quando o coletador finalizar o expediente.
+                            </p>
+                            <input
+                                type="text"
+                                value={ownerPhone}
+                                onChange={(e) => setOwnerPhone(e.target.value)}
+                                placeholder="(79) 99999-9999"
+                                style={inputStyle}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <button type="submit" style={btnSaveStyle(dispatchSaved)}>
+                                {dispatchSaved ? <><CheckCircle size={16} /> Salvo!</> : <><Save size={16} /> Salvar Config</>}
+                            </button>
+                            <button type="button" onClick={handleManualDispatch} disabled={dispatching} style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                                padding: '0.6rem 1.25rem', borderRadius: '8px', fontWeight: '600', fontSize: '0.85rem',
+                                border: '1px solid #d1d5db', cursor: dispatching ? 'not-allowed' : 'pointer',
+                                backgroundColor: '#f9fafb', color: '#374151',
+                                transition: 'all 0.25s ease',
+                            }}>
+                                <Play size={16} />
+                                {dispatching ? 'Despachando...' : 'Despachar Agora'}
+                            </button>
+                        </div>
+                    </form>
+                    {dispatchResult && (
+                        <div style={{
+                            marginTop: '1rem', padding: '0.75rem 1rem', borderRadius: '8px',
+                            backgroundColor: dispatchResult.dispatched ? '#f0fdf4' : '#fef2f2',
+                            border: `1px solid ${dispatchResult.dispatched ? '#bbf7d0' : '#fecaca'}`,
+                            fontSize: '0.85rem', color: dispatchResult.dispatched ? '#166534' : '#991b1b'
+                        }}>
+                            {dispatchResult.dispatched
+                                ? `✅ Rotas despachadas com sucesso! Modo: ${dispatchResult.mode === 'dual' ? '2 coletadores' : '1 coletador'}`
+                                : `❌ Não foi possível despachar: ${dispatchResult.reason}`
+                            }
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Base/HQ Location */}
             <div style={cardStyle}>
                 <div style={cardHeaderStyle}>
@@ -307,7 +484,7 @@ const SettingsPage = () => {
                     <h3 style={cardTitleStyle}>Base / Sede da Empresa</h3>
                 </div>
                 <p style={{ fontSize: '0.82rem', color: '#6b7280', marginBottom: '1rem', marginTop: 0 }}>
-                    Ponto de partida e retorno das rotas de coleta (Roteirização).
+                    Ponto de partida e retorno das rotas de coleta (Roteirização e Despacho).
                 </p>
                 <form onSubmit={handleSaveBase}>
                     <div style={fieldGroupStyle}>

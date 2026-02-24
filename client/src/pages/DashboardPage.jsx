@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { Droplet, TrendingUp, Users, DollarSign, Settings, Wifi, WifiOff } from 'lucide-react';
+import { Droplet, TrendingUp, Users, DollarSign, Settings, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -126,6 +127,40 @@ const DashboardPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Pending Requests Notification */}
+            {stats.pendingRequestsCount + stats.dispatchedRequestsCount > 0 && (
+                <Link to="/requests" style={{ textDecoration: 'none', color: 'inherit', display: 'block', marginBottom: '2.5rem' }}>
+                    <div style={{
+                        backgroundColor: '#fffbeb', padding: '1.25rem 1.5rem', borderRadius: 'var(--border-radius)',
+                        boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', gap: '1rem',
+                        borderLeft: '4px solid #f59e0b', cursor: 'pointer', transition: 'transform 0.15s',
+                    }}
+                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                        <div style={{ padding: '0.75rem', backgroundColor: '#fef3c7', borderRadius: '50%' }}>
+                            <AlertTriangle size={22} color="#d97706" />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <p style={{ margin: 0, fontWeight: '600', fontSize: '0.95rem', color: '#92400e' }}>
+                                Solicitações de Coleta
+                            </p>
+                            <p style={{ margin: '0.15rem 0 0', fontSize: '0.85rem', color: '#b45309' }}>
+                                {stats.pendingRequestsCount > 0 && `${stats.pendingRequestsCount} pendente${stats.pendingRequestsCount > 1 ? 's' : ''}`}
+                                {stats.pendingRequestsCount > 0 && stats.dispatchedRequestsCount > 0 && ' · '}
+                                {stats.dispatchedRequestsCount > 0 && `${stats.dispatchedRequestsCount} despachada${stats.dispatchedRequestsCount > 1 ? 's' : ''}`}
+                            </p>
+                        </div>
+                        <span style={{
+                            padding: '0.25rem 0.75rem', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 'bold',
+                            backgroundColor: '#fef3c7', color: '#92400e'
+                        }}>
+                            Ver →
+                        </span>
+                    </div>
+                </Link>
+            )}
 
             {/* WhatsApp Status Badge (Admin Only) */}
             {user?.role === 'admin' && (

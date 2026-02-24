@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Shield, User as UserIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Shield, User as UserIcon, Phone } from 'lucide-react';
 import api from '../api/axios';
 import UserModal from '../components/UserModal';
 
@@ -73,6 +73,7 @@ const UsersPage = () => {
                             <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee', backgroundColor: '#f9f9f9' }}>
                                 <th style={{ padding: '1rem' }}>Nome</th>
                                 <th style={{ padding: '1rem' }}>Email</th>
+                                <th style={{ padding: '1rem' }}>Telefone</th>
                                 <th style={{ padding: '1rem' }}>Função</th>
                                 <th style={{ padding: '1rem', textAlign: 'right' }}>Ações</th>
                             </tr>
@@ -82,6 +83,15 @@ const UsersPage = () => {
                                 <tr key={u.id} style={{ borderBottom: '1px solid #eee' }}>
                                     <td style={{ padding: '1rem', fontWeight: '500' }}>{u.name || '-'}</td>
                                     <td style={{ padding: '1rem', color: '#666' }}>{u.email}</td>
+                                    <td style={{ padding: '1rem', color: '#666' }}>
+                                        {u.phone ? (
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                <Phone size={14} />{u.phone}
+                                            </span>
+                                        ) : (
+                                            <span style={{ color: '#ccc' }}>—</span>
+                                        )}
+                                    </td>
                                     <td style={{ padding: '1rem' }}>
                                         <span style={{
                                             display: 'inline-flex', alignItems: 'center', gap: '0.25rem',

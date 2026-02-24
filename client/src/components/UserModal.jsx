@@ -7,6 +7,7 @@ const UserModal = ({ user, onClose, onSuccess }) => {
         name: '',
         email: '',
         password: '',
+        phone: '',
         role: 'collector'
     });
     const [loading, setLoading] = useState(false);
@@ -16,6 +17,7 @@ const UserModal = ({ user, onClose, onSuccess }) => {
             setFormData({
                 name: user.name || '',
                 email: user.email || '',
+                phone: user.phone || '',
                 role: user.role || 'collector',
                 password: '' // Don't fill password on edit
             });
@@ -88,6 +90,17 @@ const UserModal = ({ user, onClose, onSuccess }) => {
                             value={formData.password}
                             onChange={e => setFormData({ ...formData, password: e.target.value })}
                             required={!user}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Telefone (WhatsApp)</label>
+                        <input
+                            type="text"
+                            value={formData.phone}
+                            onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                            placeholder="(79) 99999-9999"
                             style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
                         />
                     </div>

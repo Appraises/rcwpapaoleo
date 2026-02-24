@@ -1,7 +1,20 @@
 const cron = require('node-cron');
 const ReportService = require('../services/ReportService');
+const { dispatchDailyRoutes } = require('../services/DispatchService');
 
 const initCronJobs = () => {
+    // === DAILY DISPATCH CRON JOB ===
+    // Runs every day at 06:00 AM — dispatches optimized routes to collectors via WhatsApp
+    cron.schedule('0 6 * * *', async () => {
+        try {
+            console.log('[CRON] 🚀 Starting daily route dispatch...');
+            const result = await dispatchDailyRoutes();
+            console.log('[CRON] Dispatch result:', JSON.stringify(result));
+        } catch (error) {
+            console.error('[CRON ERROR] Failed to dispatch daily routes:', error);
+        }
+    });
+
     // === WEEKLY CRON JOB ===
     // Runs every Saturday at 23:55 (11:55 PM)
     cron.schedule('55 23 * * 6', async () => {
@@ -45,7 +58,7 @@ const initCronJobs = () => {
         }
     });
 
-    console.log('[CRON] Report scheduled tasks initialized.');
+    console.log('[CRON] Report and dispatch scheduled tasks initialized.');
 };
 
 module.exports = initCronJobs;
