@@ -9,9 +9,29 @@ class LlmService {
 
             if (!cleanMessage) return false;
 
-            const prompt = `Você é um assistente de triagem da empresa Cat Óleo. Um cliente enviou a seguinte mensagem no WhatsApp pedindo algo: "${cleanMessage}".
-Ele está pedindo para coletar o óleo usado (como esvaziar a bombona, tambor cheio, etc)? 
-Responda APENAS com a palavra SIM ou NAO. Nada mais.`;
+            const prompt = `Você é um assistente de triagem da empresa Cat Óleo (que recolhe óleo de cozinha usado).
+O cliente está enviando mensagem para o número da empresa. Por causa desse contexto, ele muitas vezes NÃO VAI escrever a palavra "óleo" ou "bombona". Ele pode apenas dizer "pode vir buscar" ou "passa aqui".
+Sua função é identificar se a mensagem é um pedido de coleta. Considere também erros de português e gírias.
+
+Exemplos de SIM (mesmo com erros ou sem citar óleo):
+"pode vir buscar o óleo" -> SIM
+"pode buscar hj?" -> SIM
+"passa aki q ta cheio" -> SIM
+"minha bombona tá cheia" -> SIM
+"tem como passar aqui hoje pra recolher" -> SIM
+"venha esvaziar o tambor" -> SIM
+"preciso de coleta" -> SIM
+"pode vim pegar" -> SIM
+
+Exemplos de NAO:
+"bom dia" -> NAO
+"qual o valor do óleo?" -> NAO
+"vocês vendem bombona?" -> NAO
+"obrigado" -> NAO
+"ok, fico no aguardo" -> NAO
+
+Mensagem do cliente: "${cleanMessage}"
+Responda APENAS com a palavra SIM ou NAO. Nenhuma pontuação, justificativa ou explicação extra.`;
 
             const response = await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',

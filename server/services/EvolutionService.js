@@ -81,6 +81,26 @@ class EvolutionService {
         }
     }
 
+    // ─── 1.5 Simulate natural reading and mark as read ───────────────
+    static async simulateRead(remoteJid, messageId) {
+        if (!remoteJid || !messageId) return false;
+
+        // Step A: "I just picked up my phone" delay (5-25s)
+        const pickupDelay = randomInt(5000, 25000);
+        console.log(`[EvolutionService] 📱 Simulating phone pickup delay: ${(pickupDelay / 1000).toFixed(1)}s...`);
+        await delay(pickupDelay);
+
+        // Step B: Mark as read
+        await this.markAsRead(remoteJid, messageId);
+
+        // Step C: Simulate "reading time" (2-6s)
+        const readingDelay = randomInt(2000, 6000);
+        console.log(`[EvolutionService] 👀 Reading incoming message: ${(readingDelay / 1000).toFixed(1)}s...`);
+        await delay(readingDelay);
+
+        return true;
+    }
+
     // ─── 2. Send typing presence ─────────────────────────────────────
     static async sendPresence(remoteJid, presence = 'composing') {
         try {

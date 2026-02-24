@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Edit, Trash2, MapPin } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, MapPin, AlertTriangle } from 'lucide-react';
 import api from '../api/axios';
 
 const formatDocument = (value) => {
@@ -172,9 +172,21 @@ const ClientsPage = () => {
                                 padding: '1.5rem',
                                 borderRadius: 'var(--border-radius)',
                                 boxShadow: 'var(--shadow-sm)',
-                                borderLeft: '4px solid var(--color-primary)'
+                                borderLeft: (!client.Address?.latitude || !client.Address?.longitude) ? '4px solid #f59e0b' : '4px solid var(--color-primary)'
                             }}>
-                                <h3 style={{ marginBottom: '0.5rem', fontSize: '1.2rem' }}>{client.name}</h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <h3 style={{ fontSize: '1.2rem', margin: 0 }}>{client.name}</h3>
+                                    {(!client.Address?.latitude || !client.Address?.longitude) && (
+                                        <span title="Sem coordenadas — este cliente não aparecerá nas rotas" style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                                            backgroundColor: '#fef3c7', color: '#92400e',
+                                            padding: '0.1rem 0.5rem', borderRadius: '999px',
+                                            fontSize: '0.7rem', fontWeight: '600', whiteSpace: 'nowrap'
+                                        }}>
+                                            <AlertTriangle size={12} /> Sem GPS
+                                        </span>
+                                    )}
+                                </div>
                                 <p style={{ color: 'var(--color-text-light)', marginBottom: '0.5rem' }}>{formatDocument(client.document)}</p>
                                 <p style={{ marginBottom: '0.5rem' }}><strong>Tel:</strong> {formatPhone(client.phone)}</p>
                                 <p style={{ marginBottom: '0.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{client.address}</p>

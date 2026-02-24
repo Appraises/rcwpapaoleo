@@ -8,6 +8,7 @@ const { CollectionRequest, Collection, Client, User, SystemSetting, Address } = 
 const { Op } = require('sequelize');
 const LlmService = require('./LlmService');
 const EvolutionService = require('./EvolutionService');
+const msg = require('../utils/MessageVariation');
 const { format } = require('date-fns');
 
 /**
@@ -25,7 +26,7 @@ async function getSetting(key, defaultValue = null) {
  * @param {string} messageText - The raw message text
  * @param {string} remoteJid - WhatsApp remoteJid for replies
  */
-async function processCompletionMessage(collectorUserId, messageText, remoteJid) {
+async function processCompletionMessage(collectorUserId, messageText, remoteJid, messageId) {
     console.log(`[CompletionService] 📝 Processing completion message from collector ${collectorUserId}: "${messageText}"`);
 
     try {
@@ -35,14 +36,19 @@ async function processCompletionMessage(collectorUserId, messageText, remoteJid)
             return;
         }
 
+        // ─── ANTI-BAN: Natural reading sequence before replying ───────
+        if (remoteJid && messageId) {
+            await EvolutionService.simulateRead(remoteJid, messageId);
+        }
+
         // 1. Ask LLM to parse the completion intent
         const intent = await LlmService.checkCompletionIntent(messageText);
         console.log(`[CompletionService] 🤖 LLM parsed intent:`, intent);
 
         if (intent.type === 'UNKNOWN') {
             console.log(`[CompletionService] ℹ️ Message not recognized as completion report. Ignoring.`);
-            const reply = `Oi, ${collector.name}! Não entendi a mensagem. Para informar as coletas do dia, envie:\n\n• "coletei todos" — se completou toda a rota\n• "coletei até o 4" — se coletou até o ponto 4\n\nOu fale com o admin pelo sistema. 🛢️`;
-            await EvolutionService.sendTextMessage(collector.phone, reply);
+            const reply = msg.completion.unknownMessage(collector.name);
+            await EvolutionService.simulateTypingAndSend(collector.phone, reply, remoteJid);
             return;
         }
 
@@ -129,15 +135,12 @@ async function processCompletionMessage(collectorUserId, messageText, remoteJid)
         // 3. Send confirmation to collector
         let confirmMsg;
         if (returnedCount === 0) {
-            confirmMsg = `✅ Perfeito, ${collector.name}! Todas as ${completedCount} coletas foram registradas como concluídas.\n\nBom descanso! 💚♻️`;
+            confirmMsg = msg.completion.allDone(collector.name, completedCount);
         } else {
-            confirmMsg = `✅ Registrado, ${collector.name}!\n\n` +
-                `• *${completedCount}* coleta(s) concluída(s)\n` +
-                `• *${returnedCount}* coleta(s) ficaram para o próximo dia (com prioridade)\n\n` +
-                `Bom descanso! 💚♻️`;
+            confirmMsg = msg.completion.partial(collector.name, completedCount, returnedCount);
         }
 
-        await EvolutionService.sendTextMessage(collector.phone, confirmMsg);
+        await EvolutionService.simulateTypingAndSend(collector.phone, confirmMsg, remoteJid);
         console.log(`[CompletionService] 📤 Confirmation sent to ${collector.name}`);
 
         // 4. Send daily report to the owner
@@ -180,13 +183,13 @@ async function sendOwnerReport(collectorName, completedLocations, pendingLocatio
         const today = format(new Date(), 'dd/MM/yyyy');
         const lines = [];
 
-        lines.push(`📊 *Relatório de Coleta — ${today}*`);
+        lines.push(msg.ownerReport.header(today));
         lines.push('');
-        lines.push(`Coletador: *${collectorName}*`);
+        lines.push(msg.ownerReport.collectorLabel(collectorName));
         lines.push('');
 
         if (completedLocations.length > 0) {
-            lines.push(`✅ *Coletados (${completedLocations.length}):*`);
+            lines.push(msg.ownerReport.completedLabel(completedLocations.length));
             completedLocations.forEach((loc, i) => {
                 lines.push(`  ${i + 1}. ${loc}`);
             });
@@ -194,7 +197,7 @@ async function sendOwnerReport(collectorName, completedLocations, pendingLocatio
 
         if (pendingLocations.length > 0) {
             lines.push('');
-            lines.push(`⏳ *Não coletados — ficaram pro próximo dia (${pendingLocations.length}):*`);
+            lines.push(msg.ownerReport.pendingLabel(pendingLocations.length));
             pendingLocations.forEach((loc, i) => {
                 lines.push(`  ${i + 1}. ${loc}`);
             });
@@ -202,13 +205,14 @@ async function sendOwnerReport(collectorName, completedLocations, pendingLocatio
 
         lines.push('');
         if (pendingLocations.length === 0) {
-            lines.push('🎉 Todas as coletas do dia foram concluídas!');
+            lines.push(msg.ownerReport.allDone());
         } else {
-            lines.push(`⚠️ ${pendingLocations.length} coleta(s) pendente(s) com prioridade para amanhã.`);
+            lines.push(msg.ownerReport.pendingWarning(pendingLocations.length));
         }
 
         const reportMsg = lines.join('\n');
-        await EvolutionService.sendTextMessage(ownerPhone, reportMsg);
+        const ownerRemoteJid = `${EvolutionService._formatPhone(ownerPhone)}@s.whatsapp.net`;
+        await EvolutionService.simulateTypingAndSend(ownerPhone, reportMsg, ownerRemoteJid);
         console.log(`[CompletionService] 📤 Owner report sent to ${ownerPhone}`);
 
     } catch (error) {

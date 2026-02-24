@@ -1,7 +1,7 @@
 const { Client, User } = require('../models');
 const { Op } = require('sequelize');
 const QueueService = require('../services/QueueService');
-const { processCompletionMessage } = require('../services/CompletionService');
+const CollectorQueueService = require('../services/CollectorQueueService');
 
 exports.handleEvolutionWebhook = async (req, res) => {
     try {
@@ -83,9 +83,10 @@ exports.handleEvolutionWebhook = async (req, res) => {
             }
 
             if (collector) {
-                console.log(`[Webhook] 🚛 MATCHED COLLECTOR: ${collector.name} (id=${collector.id}). Routing to CompletionService...`);
-                // Process asynchronously, don't block the webhook
-                processCompletionMessage(collector.id, textContent, remoteJid);
+                console.log(`[Webhook] 🚛 MATCHED COLLECTOR: ${collector.name} (id=${collector.id}). Routing to CollectorQueueService...`);
+                const messageId = msg.key?.id;
+                // Add to queue instead of processing directly to prevent parallel EVOLUTION API requests
+                CollectorQueueService.add(collector.id, textContent, remoteJid, messageId);
                 continue;
             }
 

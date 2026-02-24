@@ -6,6 +6,7 @@ const { Op } = require('sequelize');
 const RouteService = require('./RouteService');
 const EvolutionService = require('./EvolutionService');
 const GeocodingService = require('./GeocodingService');
+const msg = require('../utils/MessageVariation');
 const { format } = require('date-fns');
 
 // ─── Helpers ──────────────────────────────────────────────────────────
@@ -30,9 +31,9 @@ function formatDispatchMessage(collectorName, orderedClients, clientDetails, tot
     const today = format(new Date(), 'dd/MM/yyyy');
     const lines = [];
 
-    lines.push(`🛢️ *Roteiro de Coleta — ${today}*`);
+    lines.push(msg.dispatch.header(today));
     lines.push('');
-    lines.push(`Olá, *${collectorName}*! Segue o roteiro de hoje:`);
+    lines.push(msg.dispatch.greeting(collectorName));
     lines.push('');
 
     orderedClients.forEach((_, idx) => {
@@ -48,15 +49,15 @@ function formatDispatchMessage(collectorName, orderedClients, clientDetails, tot
     });
 
     lines.push('');
-    lines.push(`📏 Distância total estimada: *${totalDistanceKm.toFixed(1)} km* (em linha reta)`);
+    lines.push(msg.dispatch.distance(totalDistanceKm.toFixed(1)));
     lines.push('');
-    lines.push(`🗺️ *Abrir rota no Google Maps:*`);
+    lines.push(msg.dispatch.googleLabel());
     lines.push(googleMapsUrl);
     lines.push('');
-    lines.push(`🔵 *Abrir no Waze (1ª parada):*`);
+    lines.push(msg.dispatch.wazeLabel());
     lines.push(wazeUrl);
     lines.push('');
-    lines.push('Bom trabalho! ♻️💚');
+    lines.push(msg.dispatch.closing());
 
     return lines.join('\n');
 }
@@ -203,7 +204,8 @@ async function dispatchDailyRoutes() {
                 const msgA = formatDispatchMessage(primaryCollector.name, orderedCoordsA, orderedDetailsA, routeA.totalDistanceKm, mapsUrlA, wazeUrlA);
 
                 console.log(`[DispatchService] 📤 Sending Route A (${groupAIndices.length} stops, ${routeA.totalDistanceKm.toFixed(1)}km) to ${primaryCollector.name}...`);
-                await EvolutionService.sendTextMessage(primaryCollector.phone, msgA);
+                const remoteJidA = `${EvolutionService._formatPhone(primaryCollector.phone)}@s.whatsapp.net`;
+                await EvolutionService.simulateTypingAndSend(primaryCollector.phone, msgA, remoteJidA);
 
                 // Route B (Secondary)
                 const routeB = RouteService.optimizeRoute(base, groupBIndices.map(i => allClientCoords[i]));
@@ -214,7 +216,8 @@ async function dispatchDailyRoutes() {
                 const msgB = formatDispatchMessage(secondaryCollector.name, orderedCoordsB, orderedDetailsB, routeB.totalDistanceKm, mapsUrlB, wazeUrlB);
 
                 console.log(`[DispatchService] 📤 Sending Route B (${groupBIndices.length} stops, ${routeB.totalDistanceKm.toFixed(1)}km) to ${secondaryCollector.name}...`);
-                await EvolutionService.sendTextMessage(secondaryCollector.phone, msgB);
+                const remoteJidB = `${EvolutionService._formatPhone(secondaryCollector.phone)}@s.whatsapp.net`;
+                await EvolutionService.simulateTypingAndSend(secondaryCollector.phone, msgB, remoteJidB);
 
                 // Save dispatchOrder and mark as DISPATCHED for both groups
                 await markDispatchedWithOrder(validRequests, groupAIndices, routeA.orderedIndices);
@@ -239,7 +242,8 @@ async function dispatchDailyRoutes() {
         const msg = formatDispatchMessage(primaryCollector.name, orderedCoords, orderedDetails, route.totalDistanceKm, mapsUrl, wazeUrl);
 
         console.log(`[DispatchService] 📤 Sending single route (${validRequests.length} stops, ${route.totalDistanceKm.toFixed(1)}km) to ${primaryCollector.name}...`);
-        await EvolutionService.sendTextMessage(primaryCollector.phone, msg);
+        const remoteJid = `${EvolutionService._formatPhone(primaryCollector.phone)}@s.whatsapp.net`;
+        await EvolutionService.simulateTypingAndSend(primaryCollector.phone, msg, remoteJid);
 
         // Save dispatchOrder and mark as DISPATCHED
         await markDispatchedWithOrder(validRequests, null, route.orderedIndices);

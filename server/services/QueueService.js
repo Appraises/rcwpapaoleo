@@ -88,22 +88,10 @@ class QueueService {
                     console.log(`[QueueService] 🔄 Humanized: "${humanized.substring(0, 80)}..."`);
 
                     // ─── ANTI-BAN: Natural reply sequence ─────────────────
-                    // Step A: Wait a random "I just picked up my phone" delay (5-25s)
-                    const pickupDelay = randomInt(5000, 25000);
-                    console.log(`[QueueService] 📱 Simulating phone pickup delay: ${(pickupDelay / 1000).toFixed(1)}s...`);
-                    await delay(pickupDelay);
+                    // Step A+B+C: Pickup, Mark as Read, Read delay
+                    await EvolutionService.simulateRead(task.remoteJid, task.messageId);
 
-                    // Step B: Mark as read (blue ticks) — "I just opened the chat"
-                    if (task.remoteJid && task.messageId) {
-                        await EvolutionService.markAsRead(task.remoteJid, task.messageId);
-                    }
-
-                    // Step C: Simulate "reading the incoming message" (2-6s)
-                    const readingDelay = randomInt(2000, 6000);
-                    console.log(`[QueueService] 👀 Reading incoming message: ${(readingDelay / 1000).toFixed(1)}s...`);
-                    await delay(readingDelay);
-
-                    // Step D: Typing → Pause → Send (handled by EvolutionService)
+                    // Step D: Typing → Pause → Send
                     await EvolutionService.simulateTypingAndSend(client.phone, humanized, task.remoteJid);
                     // ──────────────────────────────────────────────────────
                 }
