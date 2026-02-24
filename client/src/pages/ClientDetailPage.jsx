@@ -192,9 +192,9 @@ const ClientDetailPage = () => {
                         <p><strong>Telefone:</strong> {formatPhone(client.phone)}</p>
                         <p><strong>Endereço:</strong> {client.address}</p>
 
-                        {(client.latitude && client.longitude) && (
+                        {((client.latitude && client.longitude) || (client.Address?.latitude && client.Address?.longitude)) && (
                             <a
-                                href={`https://www.google.com/maps/search/?api=1&query=${client.latitude},${client.longitude}`}
+                                href={`https://www.google.com/maps/search/?api=1&query=${client.latitude || client.Address?.latitude},${client.longitude || client.Address?.longitude}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 style={{
