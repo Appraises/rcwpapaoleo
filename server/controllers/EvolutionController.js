@@ -189,6 +189,7 @@ class EvolutionController {
                     headers: { 'apikey': API_KEY, 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         webhook: {
+                            enabled: true,
                             url: webhookUrl,
                             byEvents: false,
                             base64: false,
