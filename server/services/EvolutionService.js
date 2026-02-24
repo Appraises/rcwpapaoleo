@@ -36,6 +36,8 @@ class EvolutionService {
             };
 
             console.log(`[EvolutionService] Sending reply to ${formattedPhone}...`);
+            console.log(`[EvolutionService] URL: ${apiUrl}/message/sendText/${instanceName}`);
+            console.log(`[EvolutionService] Request body:`, JSON.stringify(body, null, 2));
 
             const response = await fetch(`${apiUrl}/message/sendText/${instanceName}`, {
                 method: 'POST',
@@ -46,16 +48,19 @@ class EvolutionService {
                 body: JSON.stringify(body)
             });
 
+            const responseText = await response.text();
+            console.log(`[EvolutionService] Response status: ${response.status}`);
+            console.log(`[EvolutionService] Response body: ${responseText.substring(0, 500)}`);
+
             if (!response.ok) {
-                const errData = await response.text();
-                console.error(`[EvolutionService] Failed to send message: ${response.status} ${errData}`);
+                console.error(`[EvolutionService] ❌ Failed to send message: ${response.status} ${responseText}`);
                 return false;
             }
 
             console.log(`[EvolutionService] ✅ Message successfully sent to ${formattedPhone}`);
             return true;
         } catch (error) {
-            console.error('[EvolutionService] Network error sending WhatsApp message:', error.message);
+            console.error('[EvolutionService] ❌ Network error sending WhatsApp message:', error.message);
             return false;
         }
     }
