@@ -1,5 +1,6 @@
 // server/services/QueueService.js
 // In-Memory Queue for processing WhatsApp messages 1-by-1 to prevent CPU overload
+// Now includes anti-ban countermeasures: read receipts, typing simulation, and message humanization
 
 const LlmService = require('./LlmService');
 const EvolutionService = require('./EvolutionService');
@@ -13,14 +14,21 @@ class QueueService {
     }
 
     // Add a new message to the queue to be processed
-    add(clientId, messageText) {
+    // Now accepts remoteJid and messageId for anti-ban countermeasures
+    async add(clientId, messageText, remoteJid, messageId) {
         const BUFF_TIME_MS = 2 * 60 * 1000; // 2 minutes configurable buffer
+
+        // Immediately send "read" receipt (blue ticks) — looks natural
+        if (remoteJid && messageId) {
+            await EvolutionService.markAsRead(remoteJid, messageId);
+        }
 
         // If a buffer already exists for this client, append to it and reset the timer
         if (this.buffers.has(clientId)) {
             const buffer = this.buffers.get(clientId);
             clearTimeout(buffer.timer);
             buffer.text += '\n' + messageText; // Concatenate messages
+            buffer.remoteJid = remoteJid;       // Keep latest remoteJid
 
             // Set new timer
             buffer.timer = setTimeout(() => this.flushBuffer(clientId), BUFF_TIME_MS);
@@ -28,7 +36,7 @@ class QueueService {
         } else {
             // Create a new buffer
             const timer = setTimeout(() => this.flushBuffer(clientId), BUFF_TIME_MS);
-            this.buffers.set(clientId, { text: messageText, timer });
+            this.buffers.set(clientId, { text: messageText, timer, remoteJid });
             console.log(`[QueueService] Started ${BUFF_TIME_MS / 1000}s buffer for client ${clientId}.`);
         }
     }
@@ -39,7 +47,7 @@ class QueueService {
         if (!buffer) return;
 
         this.buffers.delete(clientId);
-        this.queue.push({ clientId, messageText: buffer.text });
+        this.queue.push({ clientId, messageText: buffer.text, remoteJid: buffer.remoteJid });
         console.log(`[QueueService] Timer reached! Flushed buffer for client ${clientId} to the main processing queue. Current size: ${this.queue.length}`);
 
         // Start processing if it's currently idle
@@ -74,11 +82,17 @@ class QueueService {
                 });
                 console.log(`[QueueService] ✅ Intention understood: COLLECTION. Request created for client ${task.clientId}`);
 
-                // 3. Send automatic WhatsApp confirmation
+                // 3. Build and humanize the reply message
                 const client = await Client.findByPk(task.clientId);
                 if (client && client.phone) {
-                    const message = `Olá, ${client.name}! ♻️\n\nSeu pedido de coleta foi registrado pelo nosso assistente virtual.\nNossos coletadores já foram avisados e o seu óleo será recolhido o mais breve possível!\n\nA equipe Cat Óleo agradece a sua colaboração.`;
-                    await EvolutionService.sendTextMessage(client.phone, message);
+                    const baseMessage = `Olá, ${client.name}! ♻️\n\nSeu pedido de coleta foi registrado pelo nosso assistente virtual.\nNossos coletadores já foram avisados e o seu óleo será recolhido o mais breve possível!\n\nA equipe Cat Óleo agradece a sua colaboração.`;
+
+                    // Humanize the message (synonym swaps, emoji variations, zero-width spaces)
+                    const humanized = EvolutionService.humanizeMessage(baseMessage);
+                    console.log(`[QueueService] 🔄 Humanized message: "${humanized.substring(0, 80)}..."`);
+
+                    // 4. Simulate typing and send (composing → delay → paused → send)
+                    await EvolutionService.simulateTypingAndSend(client.phone, humanized, task.remoteJid);
                 }
             } else {
                 console.log(`[QueueService] ℹ️ Intention understood: NON-COLLECTION (or error). Ignored message from client ${task.clientId}`);

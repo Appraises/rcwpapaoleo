@@ -84,7 +84,7 @@ exports.handleEvolutionWebhook = async (req, res) => {
 
             if (client) {
                 console.log(`[Webhook] ✅ MATCHED client id=${client.id}. Adding to queue...`);
-                QueueService.add(client.id, textContent);
+                QueueService.add(client.id, textContent, remoteJid, msg.key.id);
             } else {
                 console.log(`[Webhook] ❌ No matching client found for number: ${rawNumber}`);
             }
