@@ -104,12 +104,6 @@ const ClientDetailPage = () => {
         }
     };
 
-    if (loading) return <div className="container" style={{ padding: '2rem' }}>Carregando...</div>;
-    if (!client) return <div className="container" style={{ padding: '2rem' }}>Cliente não encontrado.</div>;
-
-    const totalCollected = collections.reduce((acc, curr) => acc + curr.quantity, 0);
-    const lastCollection = collections.length > 0 ? new Date(collections[0].date) : null;
-
     // Build monthly chart data (last 6 months)
     const monthlyChartData = useMemo(() => {
         const now = new Date();
@@ -130,6 +124,12 @@ const ClientDetailPage = () => {
     const containerRecommendation = useMemo(() => {
         return calculateContainers(client?.averageOilLiters);
     }, [client?.averageOilLiters]);
+
+    if (loading) return <div className="container" style={{ padding: '2rem' }}>Carregando...</div>;
+    if (!client) return <div className="container" style={{ padding: '2rem' }}>Cliente não encontrado.</div>;
+
+    const totalCollected = collections.reduce((acc, curr) => acc + curr.quantity, 0);
+    const lastCollection = collections.length > 0 ? new Date(collections[0].date) : null;
 
     return (
         <div className="container" style={{ padding: '2rem 1rem' }}>
