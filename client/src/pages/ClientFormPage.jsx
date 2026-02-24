@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Search, MapPin, Package } from 'lucide-react';
+import { ArrowLeft, Save, Package } from 'lucide-react';
 import api from '../api/axios';
 
 const CONTAINER_SIZES = [200, 100, 60, 50, 30];
@@ -37,6 +37,88 @@ const calculateContainers = (liters) => {
     return { containers, totalCapacity, totalContainers };
 };
 
+// CPF / CNPJ formatting and validation helpers
+const formatDocument = (value) => {
+    let v = value.replace(/\D/g, '');
+    if (v.length <= 11) {
+        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+        v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    } else {
+        v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+        v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        v = v.replace(/(\d{4})(\d)/, '$1-$2');
+        if (v.length > 18) v = v.substring(0, 18);
+    }
+    return v;
+};
+
+const isValidCPF = (cpf) => {
+    cpf = cpf.replace(/[^\d]+/g, '');
+    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+    let add = 0, rev;
+    for (let i = 0; i < 9; i++) add += parseInt(cpf.charAt(i)) * (10 - i);
+    rev = 11 - (add % 11);
+    if (rev === 10 || rev === 11) rev = 0;
+    if (rev !== parseInt(cpf.charAt(9))) return false;
+    add = 0;
+    for (let i = 0; i < 10; i++) add += parseInt(cpf.charAt(i)) * (11 - i);
+    rev = 11 - (add % 11);
+    if (rev === 10 || rev === 11) rev = 0;
+    if (rev !== parseInt(cpf.charAt(10))) return false;
+    return true;
+};
+
+const isValidCNPJ = (cnpj) => {
+    cnpj = cnpj.replace(/[^\d]+/g, '');
+    if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
+    let size = cnpj.length - 2;
+    let numbers = cnpj.substring(0, size);
+    let digits = cnpj.substring(size);
+    let sum = 0;
+    let pos = size - 7;
+    for (let i = size; i >= 1; i--) {
+        sum += numbers.charAt(size - i) * pos--;
+        if (pos < 2) pos = 9;
+    }
+    let result = sum % 11 < 2 ? 0 : 11 - sum % 11;
+    if (result != digits.charAt(0)) return false;
+    size = size + 1;
+    numbers = cnpj.substring(0, size);
+    sum = 0;
+    pos = size - 7;
+    for (let i = size; i >= 1; i--) {
+        sum += numbers.charAt(size - i) * pos--;
+        if (pos < 2) pos = 9;
+    }
+    result = sum % 11 < 2 ? 0 : 11 - sum % 11;
+    if (result != digits.charAt(1)) return false;
+    return true;
+};
+
+const formatPhone = (value) => {
+    let v = value.replace(/\D/g, '');
+    if (v.length <= 10) {
+        v = v.replace(/(\d{2})(\d)/, '($1) $2');
+        v = v.replace(/(\d{4})(\d)/, '$1-$2');
+    } else {
+        v = v.replace(/(\d{2})(\d)/, '($1) $2');
+        v = v.replace(/(\d{5})(\d)/, '$1-$2');
+        if (v.length > 15) v = v.substring(0, 15);
+    }
+    return v;
+};
+
+const formatCep = (value) => {
+    let v = value.replace(/\D/g, '');
+    v = v.replace(/^(\d{5})(\d)/, '$1-$2');
+    if (v.length > 9) v = v.substring(0, 9);
+    return v;
+};
+
+const UFS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
+
 const ClientFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -61,7 +143,9 @@ const ClientFormPage = () => {
         longitude: ''
     });
     const [error, setError] = useState('');
+    const [docError, setDocError] = useState('');
     const [geocoding, setGeocoding] = useState(false);
+    const [cepLoading, setCepLoading] = useState(false);
 
     const handleGeocode = async () => {
         // Silent check: Only trigger if we have all necessary info
@@ -85,6 +169,30 @@ const ClientFormPage = () => {
             console.error('Geocoding error:', error);
         } finally {
             setGeocoding(false);
+        }
+    };
+
+    const handleZipBlur = async (e) => {
+        const zip = e.target.value.replace(/\D/g, '');
+        if (zip.length !== 8) return;
+
+        setCepLoading(true);
+        try {
+            const response = await fetch(`https://viacep.com.br/ws/${zip}/json/`);
+            const data = await response.json();
+            if (!data.erro) {
+                setFormData(prev => ({
+                    ...prev,
+                    street: data.logradouro || prev.street,
+                    district: data.bairro || prev.district,
+                    city: data.localidade || prev.city,
+                    state: data.uf || prev.state
+                }));
+            }
+        } catch (error) {
+            console.error('ViaCEP Error:', error);
+        } finally {
+            setCepLoading(false);
         }
     };
 
@@ -125,7 +233,19 @@ const ClientFormPage = () => {
     }, [id]);
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        let { name, value } = e.target;
+
+        if (name === 'document') {
+            value = formatDocument(value);
+            setDocError('');
+        }
+        if (name === 'phone') {
+            value = formatPhone(value);
+        }
+        if (name === 'zip') {
+            value = formatCep(value);
+        }
+
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -137,6 +257,18 @@ const ClientFormPage = () => {
         e.preventDefault();
         setLoading(true);
         setError('');
+        setDocError('');
+
+        const rawDoc = formData.document.replace(/\D/g, '');
+        if (rawDoc.length <= 11 && !isValidCPF(rawDoc)) {
+            setDocError('CPF inválido');
+            setLoading(false);
+            return;
+        } else if (rawDoc.length > 11 && !isValidCNPJ(rawDoc)) {
+            setDocError('CNPJ inválido');
+            setLoading(false);
+            return;
+        }
 
         try {
             if (id) {
@@ -200,8 +332,10 @@ const ClientFormPage = () => {
                                 value={formData.document}
                                 onChange={handleChange}
                                 required
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
+                                maxLength={18}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: docError ? '1px solid var(--color-error)' : '1px solid #ddd' }}
                             />
+                            {docError && <span style={{ color: 'var(--color-error)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{docError}</span>}
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Telefone *</label>
@@ -262,8 +396,12 @@ const ClientFormPage = () => {
                                 name="zip"
                                 value={formData.zip || ''}
                                 onChange={handleChange}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
+                                onBlur={handleZipBlur}
+                                maxLength={9}
+                                placeholder={cepLoading ? 'Buscando...' : ''}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd', backgroundColor: cepLoading ? '#f3f4f6' : 'white' }}
                             />
+                            <small style={{ color: '#666', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>Preenche o endereço automaticamente.</small>
                         </div>
                     </div>
 
@@ -282,16 +420,19 @@ const ClientFormPage = () => {
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Estado (UF) *</label>
-                            <input
-                                type="text"
+                            <select
                                 name="state"
                                 value={formData.state || ''}
                                 onChange={handleChange}
                                 onBlur={handleGeocode}
                                 required
-                                maxLength={2}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
-                            />
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd', backgroundColor: 'white' }}
+                            >
+                                <option value="" disabled>Selecione</option>
+                                {UFS.map(uf => (
+                                    <option key={uf} value={uf}>{uf}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 

@@ -4,17 +4,17 @@ const { Op } = require('sequelize');
 exports.createClient = async (req, res) => {
     try {
         const {
-            name, document, phone,
+            name, tradeName, document, phone,
             street, number, district, city, state, zip, reference, latitude, longitude,
-            pricePerLiter, observations
+            pricePerLiter, averageOilLiters, observations
         } = req.body;
 
         const fullAddressLegacy = `${street}, ${number} - ${district}, ${city} - ${state}`;
 
         const client = await Client.create({
-            name, document, phone,
+            name, tradeName, document, phone,
             address: fullAddressLegacy,
-            pricePerLiter, observations
+            pricePerLiter, averageOilLiters, observations
         });
 
         await Address.create({
@@ -72,11 +72,11 @@ exports.updateClient = async (req, res) => {
         const client = await Client.findByPk(req.params.id);
         if (!client) return res.status(404).json({ error: 'Client not found' });
 
-        const { name, document, phone, address, street, number, district, city, state, zip, reference, pricePerLiter, latitude, longitude, observations } = req.body;
+        const { name, tradeName, document, phone, address, street, number, district, city, state, zip, reference, pricePerLiter, averageOilLiters, latitude, longitude, observations } = req.body;
 
         const fullAddress = address || (street ? `${street}, ${number} - ${district}, ${city} - ${state}` : client.address);
 
-        await client.update({ name, document, phone, address: fullAddress, street, number, district, city, state, zip, reference, pricePerLiter, latitude, longitude, observations });
+        await client.update({ name, tradeName, document, phone, address: fullAddress, street, number, district, city, state, zip, reference, pricePerLiter, averageOilLiters, latitude, longitude, observations });
         res.json(client);
     } catch (error) {
         res.status(400).json({ error: error.message });
