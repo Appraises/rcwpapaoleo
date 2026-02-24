@@ -67,9 +67,9 @@ exports.handleEvolutionWebhook = async (req, res) => {
             const lastEight = rawNumber.slice(-8);
             console.log(`[Webhook] Last 8 digits for matching: ${lastEight}`);
 
-            // ── Try matching as a COLLECTOR (User) first ──────────────
+            // ── Try matching as a COLLECTOR (User with isCollector flag) first ──────────────
             const allCollectors = await User.findAll({
-                where: { role: 'collector', phone: { [Op.ne]: null } },
+                where: { isCollector: true, phone: { [Op.ne]: null } },
                 attributes: ['id', 'name', 'phone']
             });
 

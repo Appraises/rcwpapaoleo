@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Shield, User as UserIcon, Phone } from 'lucide-react';
+import { Plus, Edit, Trash2, Shield, User as UserIcon, Phone, Truck } from 'lucide-react';
 import api from '../api/axios';
 import UserModal from '../components/UserModal';
 
@@ -93,16 +93,29 @@ const UsersPage = () => {
                                         )}
                                     </td>
                                     <td style={{ padding: '1rem' }}>
-                                        <span style={{
-                                            display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
-                                            padding: '0.25rem 0.75rem', borderRadius: '1rem',
-                                            fontSize: '0.85rem', fontWeight: '500',
-                                            backgroundColor: u.role === 'admin' ? '#e0f2fe' : '#f3f4f6',
-                                            color: u.role === 'admin' ? '#0369a1' : '#374151'
-                                        }}>
-                                            {u.role === 'admin' ? <Shield size={14} /> : <UserIcon size={14} />}
-                                            {u.role === 'admin' ? 'Admin' : 'Coletador'}
-                                        </span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                            <span style={{
+                                                display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                                                padding: '0.25rem 0.75rem', borderRadius: '1rem',
+                                                fontSize: '0.85rem', fontWeight: '500', width: 'fit-content',
+                                                backgroundColor: u.role === 'admin' ? '#e0f2fe' : '#f3f4f6',
+                                                color: u.role === 'admin' ? '#0369a1' : '#374151'
+                                            }}>
+                                                {u.role === 'admin' ? <Shield size={14} /> : <UserIcon size={14} />}
+                                                {u.role === 'admin' ? 'Admin' : 'Coletador'}
+                                            </span>
+                                            {u.isCollector && (
+                                                <span style={{
+                                                    display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                                                    padding: '0.25rem 0.75rem', borderRadius: '1rem',
+                                                    fontSize: '0.75rem', fontWeight: '600', width: 'fit-content',
+                                                    backgroundColor: '#dcfce7', color: '#166534'
+                                                }}>
+                                                    <Truck size={12} />
+                                                    Atua em Campo
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td style={{ padding: '1rem', textAlign: 'right' }}>
                                         <button onClick={() => handleEdit(u)} style={{ marginRight: '1rem', color: 'var(--color-primary)', background: 'none' }}>

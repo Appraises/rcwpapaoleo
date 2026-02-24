@@ -28,6 +28,11 @@ const User = sequelize.define('User', {
         allowNull: false,
         defaultValue: 'collector', // 'admin' or 'collector'
     },
+    isCollector: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+    },
     passwordHash: {
         type: DataTypes.STRING,
         allowNull: false,

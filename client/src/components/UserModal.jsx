@@ -8,7 +8,8 @@ const UserModal = ({ user, onClose, onSuccess }) => {
         email: '',
         password: '',
         phone: '',
-        role: 'collector'
+        role: 'collector',
+        isCollector: true
     });
     const [loading, setLoading] = useState(false);
 
@@ -19,6 +20,7 @@ const UserModal = ({ user, onClose, onSuccess }) => {
                 email: user.email || '',
                 phone: user.phone || '',
                 role: user.role || 'collector',
+                isCollector: user.isCollector !== undefined ? user.isCollector : true,
                 password: '' // Don't fill password on edit
             });
         }
@@ -112,9 +114,22 @@ const UserModal = ({ user, onClose, onSuccess }) => {
                             onChange={e => setFormData({ ...formData, role: e.target.value })}
                             style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd', backgroundColor: 'white' }}
                         >
-                            <option value="collector">Coletador</option>
-                            <option value="admin">Administrador</option>
+                            <option value="collector">Ocupação: Coletador</option>
+                            <option value="admin">Ocupação: Administrador</option>
                         </select>
+                    </div>
+
+                    <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input
+                            type="checkbox"
+                            id="isCollector"
+                            checked={formData.isCollector}
+                            onChange={e => setFormData({ ...formData, isCollector: e.target.checked })}
+                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                        />
+                        <label htmlFor="isCollector" style={{ cursor: 'pointer', fontWeight: '500' }}>
+                            Atua na rua como Coletador (Habilita rotas do WhatsApp)
+                        </label>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>

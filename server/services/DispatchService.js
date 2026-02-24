@@ -149,7 +149,7 @@ async function dispatchDailyRoutes() {
         // 5. Get collector(s)
         const primaryCollector = primaryCollectorId
             ? await User.findByPk(primaryCollectorId)
-            : await User.findOne({ where: { role: 'collector', phone: { [Op.ne]: null } } });
+            : await User.findOne({ where: { isCollector: true, phone: { [Op.ne]: null } } });
 
         if (!primaryCollector || !primaryCollector.phone) {
             console.error('[DispatchService] ❌ No primary collector with phone number found. Aborting.');
