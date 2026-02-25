@@ -17,9 +17,20 @@ class GeocodingService {
      * @param {string} params.state
      * @returns {Promise<{lat: number, lng: number}|null>}
      */
-    static async geocode({ street, number, district, city, state }) {
+    static async geocode({ street, number, district, city, state, zip }) {
         // Build multiple query variations — try most specific first, then broader
         const queries = [];
+
+        if (zip) {
+            const cleanZip = zip.replace(/\D/g, '');
+            if (cleanZip.length === 8) {
+                const formattedZip = `${cleanZip.substring(0, 5)}-${cleanZip.substring(5)}`;
+                if (street && number && district) queries.push(`${street}, ${number}, ${district}, ${formattedZip}, Brasil`);
+                if (street && number) queries.push(`${street}, ${number}, ${formattedZip}, Brasil`);
+                if (street && district) queries.push(`${street}, ${district}, ${formattedZip}, Brasil`);
+                if (street) queries.push(`${street}, ${formattedZip}, Brasil`);
+            }
+        }
 
         // 1. Street + Number + District + City
         if (street && number && district && city && state) {
@@ -105,6 +116,7 @@ class GeocodingService {
         const district = addr?.district || client.district;
         const city = addr?.city || client.city;
         const state = addr?.state || client.state;
+        const zip = addr?.zip || client.zip;
 
         if (!street && !city) {
             console.warn(`[GeocodingService] Client "${client.name}" has no address to geocode`);
@@ -113,7 +125,7 @@ class GeocodingService {
 
         console.log(`[GeocodingService] 🔍 Geocoding client "${client.name}" (${street}, ${number}, ${city})...`);
 
-        const result = await this.geocode({ street, number, district, city, state });
+        const result = await this.geocode({ street, number, district, city, state, zip });
 
         if (!result) return false;
 

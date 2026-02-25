@@ -14,7 +14,7 @@ exports.createClient = async (req, res) => {
         let finalLat = latitude;
         let finalLng = longitude;
         if (!finalLat || !finalLng) {
-            const coords = await GeocodingService.geocode({ street, number, district, city, state });
+            const coords = await GeocodingService.geocode({ street, number, district, city, state, zip });
             if (coords) {
                 finalLat = coords.lat;
                 finalLng = coords.lng;
@@ -120,7 +120,7 @@ exports.updateClient = async (req, res) => {
         let finalLat = latitude;
         let finalLng = longitude;
         if (!finalLat || !finalLng) {
-            const coords = await GeocodingService.geocode({ street, number, district, city, state });
+            const coords = await GeocodingService.geocode({ street, number, district, city, state, zip });
             if (coords) {
                 finalLat = coords.lat;
                 finalLng = coords.lng;
