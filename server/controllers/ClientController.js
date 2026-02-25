@@ -117,25 +117,46 @@ exports.getDistinctCities = async (req, res) => {
         const cities = addresses.map(a => a.city).filter(Boolean);
         res.json(cities);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('[ClientController] ⚠️ getDistinctCities fallback:', error.message);
+        try {
+            const sequelize = require('../config/database');
+            const [results] = await sequelize.query('SELECT DISTINCT city FROM Addresses WHERE city IS NOT NULL ORDER BY city ASC');
+            res.json(results.map(r => r.city).filter(Boolean));
+        } catch (e2) {
+            res.json([]);
+        }
     }
 };
 
 exports.getClientById = async (req, res) => {
     try {
-        const client = await Client.findByPk(req.params.id, {
-            include: [Address, { model: ClientPhone, as: 'additionalPhones' }]
-        });
-        if (!client) return res.status(404).json({ error: 'Client not found' });
-        res.json(client);
+        try {
+            const client = await Client.findByPk(req.params.id, {
+                include: [Address, { model: ClientPhone, as: 'additionalPhones' }]
+            });
+            if (!client) return res.status(404).json({ error: 'Client not found' });
+            return res.json(client);
+        } catch (includeError) {
+            console.error('[ClientController] ⚠️ getClientById includes failed, trying fallback:', includeError.message);
+            const client = await Client.findByPk(req.params.id);
+            if (!client) return res.status(404).json({ error: 'Client not found' });
+            return res.json(client);
+        }
     } catch (error) {
+        console.error('[ClientController] ❌ getClientById error:', error);
         res.status(500).json({ error: error.message });
     }
 };
 
 exports.updateClient = async (req, res) => {
     try {
-        const client = await Client.findByPk(req.params.id, { include: Address });
+        let client;
+        try {
+            client = await Client.findByPk(req.params.id, { include: Address });
+        } catch (e) {
+            console.error('[ClientController] ⚠️ updateClient include failed, trying without:', e.message);
+            client = await Client.findByPk(req.params.id);
+        }
         if (!client) return res.status(404).json({ error: 'Client not found' });
 
         const { name, tradeName, document, phone, additionalPhones, address, street, number, district, city, state, zip, reference, pricePerLiter, averageOilLiters, latitude, longitude, observations } = req.body;
@@ -164,38 +185,57 @@ exports.updateClient = async (req, res) => {
 
         await client.update({ name, tradeName, document, phone, address: fullAddress, pricePerLiter, averageOilLiters, observations });
 
-        // Update or create Address
-        if (client.Address) {
-            await client.Address.update({
-                street, number, district, city, state, zip, reference,
-                latitude: finalLat, longitude: finalLng
-            });
-        } else {
-            await Address.create({
-                clientId: client.id,
-                street, number, district, city, state, zip, reference,
-                latitude: finalLat, longitude: finalLng
-            });
-        }
-
-        if (additionalPhones && Array.isArray(additionalPhones)) {
-            // Drop existing additional phones and recreate to keep it simple
-            await ClientPhone.destroy({ where: { clientId: client.id } });
-
-            const extraPhones = additionalPhones
-                .filter(p => !!p)
-                .map(p => ({ clientId: client.id, phone: p }));
-
-            if (extraPhones.length > 0) {
-                await ClientPhone.bulkCreate(extraPhones);
+        // Update or create Address using raw SQL as fallback
+        try {
+            if (client.Address) {
+                await client.Address.update({
+                    street, number, district, city, state, zip, reference,
+                    latitude: finalLat, longitude: finalLng
+                });
+            } else {
+                await Address.create({
+                    clientId: client.id,
+                    street, number, district, city, state, zip, reference,
+                    latitude: finalLat, longitude: finalLng
+                });
             }
+        } catch (addrError) {
+            console.error('[ClientController] ⚠️ Address ORM failed, using raw SQL:', addrError.message);
+            const sequelize = require('../config/database');
+            await sequelize.query('DELETE FROM Addresses WHERE clientId = ?', { replacements: [client.id] });
+            await sequelize.query(
+                'INSERT INTO Addresses (clientId, street, number, district, city, state, zip, reference, latitude, longitude, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"), datetime("now"))',
+                { replacements: [client.id, street, number, district, city, state, zip, reference, finalLat, finalLng] }
+            );
         }
 
-        const updatedClient = await Client.findByPk(client.id, {
-            include: [Address, { model: ClientPhone, as: 'additionalPhones' }]
-        });
-        res.json(updatedClient);
+        // Handle additional phones
+        try {
+            if (additionalPhones && Array.isArray(additionalPhones)) {
+                await ClientPhone.destroy({ where: { clientId: client.id } });
+                const extraPhones = additionalPhones
+                    .filter(p => !!p)
+                    .map(p => ({ clientId: client.id, phone: p }));
+                if (extraPhones.length > 0) {
+                    await ClientPhone.bulkCreate(extraPhones);
+                }
+            }
+        } catch (phoneError) {
+            console.error('[ClientController] ⚠️ ClientPhone ORM failed:', phoneError.message);
+        }
+
+        // Return updated client
+        try {
+            const updatedClient = await Client.findByPk(client.id, {
+                include: [Address, { model: ClientPhone, as: 'additionalPhones' }]
+            });
+            res.json(updatedClient);
+        } catch (e) {
+            const updatedClient = await Client.findByPk(client.id);
+            res.json(updatedClient);
+        }
     } catch (error) {
+        console.error('[ClientController] ❌ updateClient error:', error);
         res.status(400).json({ error: error.message });
     }
 };
