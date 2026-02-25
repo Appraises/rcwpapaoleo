@@ -96,11 +96,13 @@ function RequestsPage() {
                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
                                     <MapPin size={16} style={{ marginTop: '0.1rem', flexShrink: 0 }} />
                                     <span>
-                                        {req.Client.Address ?
-                                            `${req.Client.Address.street}, ${req.Client.Address.number} - ${req.Client.Address.district}, ${req.Client.Address.city}`
-                                            : `${req.Client.street}, ${req.Client.number} - ${req.Client.district}, ${req.Client.city}`
+                                        {req.Client.Address && req.Client.Address.street
+                                            ? `${req.Client.Address.street}, ${req.Client.Address.number || 'S/N'} - ${req.Client.Address.district || ''}, ${req.Client.Address.city || ''}`
+                                            : req.Client.street
+                                                ? `${req.Client.street}, ${req.Client.number || 'S/N'} - ${req.Client.district || ''}, ${req.Client.city || ''}`
+                                                : 'Endereço não cadastrado'
                                         }
-                                        {req.Client.reference && ` (${req.Client.reference})`}
+                                        {(req.Client.Address?.reference || req.Client.reference) && ` (${req.Client.Address?.reference || req.Client.reference})`}
                                     </span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

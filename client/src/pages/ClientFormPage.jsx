@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Package } from 'lucide-react';
+import { ArrowLeft, Save, Package, Plus, X } from 'lucide-react';
 import api from '../api/axios';
 
 const CONTAINER_SIZES = [200, 100, 60, 50, 30];
