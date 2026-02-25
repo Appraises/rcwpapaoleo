@@ -53,7 +53,7 @@ exports.handleEvolutionWebhook = async (req, res) => {
             const remoteJid = msg.key.remoteJid;
             console.log(`[Webhook] remoteJid: ${remoteJid}`);
 
-            if (!remoteJid || !remoteJid.includes('@s.whatsapp.net')) {
+            if (!remoteJid || (!remoteJid.includes('@s.whatsapp.net') && !remoteJid.includes('@lid'))) {
                 console.log('[Webhook] ⏩ Skipping non-individual chat (group or broadcast)');
                 continue;
             }
