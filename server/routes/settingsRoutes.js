@@ -58,4 +58,9 @@ router.put('/', authMiddleware, async (req, res) => {
     }
 });
 
+// GET /api/settings/maps-key - securely expose maps api key to authenticated frontend
+router.get('/maps-key', authMiddleware, (req, res) => {
+    res.json({ key: process.env.GOOGLE_MAPS_API_KEY || '' });
+});
+
 module.exports = router;

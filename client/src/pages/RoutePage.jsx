@@ -1,90 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
-import 'leaflet-routing-machine';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Polyline } from '@react-google-maps/api';
 import api from '../api/axios';
 import { Truck, Navigation, MapPin, CheckSquare, Square, RotateCcw, Zap, Home, Settings2 } from 'lucide-react';
 
-// Fix for default marker icon in React Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+// Map styling options
+const mapOptions = {
+    disableDefaultUI: false,
+    zoomControl: true,
+    streetViewControl: false,
+    mapTypeControl: false,
+};
 
 // Create a numbered icon for route stops
-const createNumberedIcon = (number) => {
-    const color = '#3b82f6';
-    return L.divIcon({
-        className: 'custom-numbered-marker',
-        html: `
-            <div style="
-                background: ${color};
-                color: white;
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 700;
-                font-size: 14px;
-                border: 3px solid white;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            ">
-                ${number}
-            </div>
-            <div style="
-                width: 0;
-                height: 0;
-                border-left: 8px solid transparent;
-                border-right: 8px solid transparent;
-                border-top: 10px solid ${color};
-                margin: -2px auto 0;
-            "></div>
-        `,
-        iconSize: [32, 42],
-        iconAnchor: [16, 42],
-        popupAnchor: [0, -42]
-    });
+// Using Google Maps chart API for customized markers
+const createNumberedIconUrl = (number) => {
+    return `https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=${number}|3b82f6|ffffff`;
 };
 
 // Create a special icon for the base/HQ
-const createBaseIcon = () => {
-    return L.divIcon({
-        className: 'custom-base-marker',
-        html: `
-            <div style="
-                background: #16a34a;
-                color: white;
-                width: 36px;
-                height: 36px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 18px;
-                border: 3px solid white;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.35);
-            ">
-                🏠
-            </div>
-            <div style="
-                width: 0;
-                height: 0;
-                border-left: 9px solid transparent;
-                border-right: 9px solid transparent;
-                border-top: 11px solid #16a34a;
-                margin: -2px auto 0;
-            "></div>
-        `,
-        iconSize: [36, 47],
-        iconAnchor: [18, 47],
-        popupAnchor: [0, -47]
-    });
+const createBaseIconUrl = () => {
+    return `https://chart.apis.google.com/chart?chst=d_map_pin_icon&chld=home|16a34a`;
 };
 
 // Haversine distance in km between two lat/lng points
@@ -100,43 +35,7 @@ const haversineDistance = (lat1, lon1, lat2, lon2) => {
     return R * c;
 };
 
-const RoutingMachine = ({ waypoints }) => {
-    const map = useMap();
-    const routingControlRef = useRef(null);
 
-    useEffect(() => {
-        if (!map) return;
-
-        // Remove previous control if exists
-        if (routingControlRef.current) {
-            map.removeControl(routingControlRef.current);
-        }
-
-        if (waypoints.length > 1) {
-            const planPoints = waypoints.map(wp => L.latLng(wp[0], wp[1]));
-
-            routingControlRef.current = L.Routing.control({
-                waypoints: planPoints,
-                routeWhileDragging: false,
-                show: false,
-                addWaypoints: false,
-                fitSelectedRoutes: true,
-                lineOptions: {
-                    styles: [{ color: '#2E7D32', weight: 5, opacity: 0.85 }]
-                },
-                createMarker: () => null // We handle markers ourselves
-            }).addTo(map);
-        }
-
-        return () => {
-            if (routingControlRef.current && map) {
-                map.removeControl(routingControlRef.current);
-            }
-        };
-    }, [map, waypoints]);
-
-    return null;
-};
 
 // Default HQ/Base location (Aracaju - SE)
 const DEFAULT_BASE = { lat: -10.9472, lng: -37.0731, name: 'Base da Empresa' };
@@ -151,6 +50,11 @@ const RoutePage = () => {
     const [routeStats, setRouteStats] = useState(null); // { stops, distanceKm }
     const [searchTerm, setSearchTerm] = useState('');
     const [showBaseConfig, setShowBaseConfig] = useState(false);
+
+    // Google Maps API Key state
+    const [apiKey, setApiKey] = useState('');
+    const [activeInfoWindow, setActiveInfoWindow] = useState(null);
+    const mapRef = useRef(null);
 
     // Base/HQ location — persisted in localStorage
     const [baseLat, setBaseLat] = useState(() => {
@@ -172,7 +76,22 @@ const RoutePage = () => {
         setShowBaseConfig(false);
     };
 
-    const defaultCenter = [baseLat, baseLng];
+    const defaultCenter = { lat: baseLat, lng: baseLng };
+
+    // Fetch API Key
+    useEffect(() => {
+        const fetchApiKey = async () => {
+            try {
+                const response = await api.get('/settings/maps-key');
+                if (response.data && response.data.key) {
+                    setApiKey(response.data.key);
+                }
+            } catch (error) {
+                console.error('Error fetching Maps API key:', error);
+            }
+        };
+        fetchApiKey();
+    }, []);
 
     useEffect(() => {
         const fetchClients = async () => {
@@ -392,12 +311,28 @@ const RoutePage = () => {
             totalDistance += dist[bestOrder[bestOrder.length - 1] + 1][0]; // last to base
 
             // Build waypoints: base → clients → base
-            const clientPoints = orderedPath.map(c => [c.Address.latitude, c.Address.longitude]);
+            const clientPoints = orderedPath.map(c => ({ lat: c.Address.latitude, lng: c.Address.longitude }));
             const points = [
-                [baseLat, baseLng],   // Start at base
+                { lat: baseLat, lng: baseLng },   // Start at base
                 ...clientPoints,       // Visit clients
-                [baseLat, baseLng],   // Return to base
+                { lat: baseLat, lng: baseLng },   // Return to base
             ];
+
+            // Fit map bounds to waypoints
+            if (mapRef.current && points.length > 0) {
+                const bounds = new window.google.maps.LatLngBounds();
+                points.forEach(point => bounds.extend(point));
+                mapRef.current.fitBounds(bounds);
+                // Add a little padding by setting zoom slightly lower after a tiny delay
+                setTimeout(() => {
+                    if (mapRef.current) {
+                        const currentZoom = mapRef.current.getZoom();
+                        if (currentZoom > 16) {
+                            mapRef.current.setZoom(16);
+                        }
+                    }
+                }, 100);
+            }
 
             // Update state
             setSelectedClients(orderedPath);
@@ -426,7 +361,7 @@ const RoutePage = () => {
         const origin = `${baseLat},${baseLng}`;
         const destination = `${baseLat},${baseLng}`;
         // Client stops are waypoints[1] through waypoints[length-2] (skip base at start/end)
-        const clientStops = routeWaypoints.slice(1, -1).map(pt => `${pt[0]},${pt[1]}`).join('|');
+        const clientStops = routeWaypoints.slice(1, -1).map(pt => `${pt.lat},${pt.lng}`).join('|');
 
         const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${clientStops}&travelmode=driving`;
 
@@ -444,6 +379,21 @@ const RoutePage = () => {
 
     const filteredClients = getFilteredClients();
     const isRouteActive = optimizedOrder.length > 0;
+
+    const onLoad = useCallback(function callback(map) {
+        mapRef.current = map;
+    }, []);
+
+    const onUnmount = useCallback(function callback(map) {
+        mapRef.current = null;
+    }, []);
+
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: apiKey,
+        // Optional: only load if we have a key, prevents errors when key is missing/loading
+        preventGoogleFontsLoading: true
+    });
 
     // Styles
     const sidebarStyle = {
@@ -772,69 +722,108 @@ const RoutePage = () => {
                     border: '1px solid #e5e7eb',
                     backgroundColor: 'white'
                 }}>
-                    <MapContainer center={defaultCenter} zoom={12} style={{ height: '100%', width: '100%' }}>
-                        <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-
-                        {/* Base/HQ Marker — always shown */}
-                        <Marker position={[baseLat, baseLng]} icon={createBaseIcon()}>
-                            <Popup>
-                                <div>
-                                    <div style={{
-                                        fontSize: '0.7rem', fontWeight: '700',
-                                        color: '#16a34a', marginBottom: '0.25rem',
-                                        textTransform: 'uppercase', letterSpacing: '0.05em',
-                                    }}>
-                                        📍 Ponto de partida e retorno
-                                    </div>
-                                    <strong>{baseName}</strong>
-                                </div>
-                            </Popup>
-                        </Marker>
-
-                        {/* Markers for selected clients */}
-                        {selectedClients.map((client, idx) => {
-                            if (!client.Address || !client.Address.latitude) return null;
-
-                            const routeIndex = isRouteActive
-                                ? optimizedOrder.findIndex(c => c.id === client.id)
-                                : -1;
-
-                            const icon = isRouteActive && routeIndex >= 0
-                                ? createNumberedIcon(routeIndex + 1)
-                                : undefined; // default leaflet marker
-
-                            return (
-                                <Marker
-                                    key={client.id}
-                                    position={[client.Address.latitude, client.Address.longitude]}
-                                    icon={icon}
-                                >
-                                    <Popup>
+                    {!apiKey && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#666' }}>
+                            Aguardando chave da API do Maps...
+                        </div>
+                    )}
+                    {apiKey && !isLoaded && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#666' }}>
+                            Carregando Google Maps...
+                        </div>
+                    )}
+                    {apiKey && isLoaded && (
+                        <GoogleMap
+                            mapContainerStyle={{ width: '100%', height: '100%' }}
+                            center={defaultCenter}
+                            zoom={12}
+                            options={mapOptions}
+                            onLoad={onLoad}
+                            onUnmount={onUnmount}
+                            onClick={() => setActiveInfoWindow(null)}
+                        >
+                            {/* Base/HQ Marker */}
+                            <Marker
+                                position={{ lat: baseLat, lng: baseLng }}
+                                icon={{
+                                    url: createBaseIconUrl(),
+                                    scaledSize: new window.google.maps.Size(21, 34),
+                                    anchor: new window.google.maps.Point(10, 34)
+                                }}
+                                onClick={() => setActiveInfoWindow('base')}
+                            >
+                                {activeInfoWindow === 'base' && (
+                                    <InfoWindow onCloseClick={() => setActiveInfoWindow(null)}>
                                         <div>
-                                            {isRouteActive && routeIndex >= 0 && (
-                                                <div style={{
-                                                    fontSize: '0.7rem', fontWeight: '700',
-                                                    color: 'var(--color-primary)', marginBottom: '0.25rem',
-                                                    textTransform: 'uppercase', letterSpacing: '0.05em',
-                                                }}>
-                                                    Parada #{routeIndex + 1}
-                                                </div>
-                                            )}
-                                            <strong>{client.name}</strong><br />
-                                            {client.Address.street}, {client.Address.number}<br />
-                                            {client.Address.district}
+                                            <div style={{
+                                                fontSize: '0.7rem', fontWeight: '700',
+                                                color: '#16a34a', marginBottom: '0.25rem',
+                                                textTransform: 'uppercase', letterSpacing: '0.05em',
+                                            }}>
+                                                📍 Ponto de partida e retorno
+                                            </div>
+                                            <strong style={{ color: '#000' }}>{baseName}</strong>
                                         </div>
-                                    </Popup>
-                                </Marker>
-                            );
-                        })}
+                                    </InfoWindow>
+                                )}
+                            </Marker>
 
-                        {/* Routing Machine Layer */}
-                        {routeWaypoints.length > 0 && <RoutingMachine waypoints={routeWaypoints} />}
-                    </MapContainer>
+                            {/* Markers for selected clients */}
+                            {selectedClients.map((client, idx) => {
+                                if (!client.Address || !client.Address.latitude) return null;
+
+                                const routeIndex = isRouteActive
+                                    ? optimizedOrder.findIndex(c => c.id === client.id)
+                                    : -1;
+
+                                const markerIcon = isRouteActive && routeIndex >= 0
+                                    ? {
+                                        url: createNumberedIconUrl(routeIndex + 1),
+                                    }
+                                    : undefined; // Default Google Maps red pin
+
+                                return (
+                                    <Marker
+                                        key={client.id}
+                                        position={{ lat: client.Address.latitude, lng: client.Address.longitude }}
+                                        icon={markerIcon}
+                                        onClick={() => setActiveInfoWindow(`client-${client.id}`)}
+                                    >
+                                        {activeInfoWindow === `client-${client.id}` && (
+                                            <InfoWindow onCloseClick={() => setActiveInfoWindow(null)}>
+                                                <div style={{ color: '#000' }}>
+                                                    {isRouteActive && routeIndex >= 0 && (
+                                                        <div style={{
+                                                            fontSize: '0.7rem', fontWeight: '700',
+                                                            color: 'var(--color-primary)', marginBottom: '0.25rem',
+                                                            textTransform: 'uppercase', letterSpacing: '0.05em',
+                                                        }}>
+                                                            Parada #{routeIndex + 1}
+                                                        </div>
+                                                    )}
+                                                    <strong>{client.name}</strong><br />
+                                                    {client.Address.street}, {client.Address.number}<br />
+                                                    {client.Address.district}
+                                                </div>
+                                            </InfoWindow>
+                                        )}
+                                    </Marker>
+                                );
+                            })}
+
+                            {/* Polyline for Route Waypoints */}
+                            {routeWaypoints.length > 1 && (
+                                <Polyline
+                                    path={routeWaypoints}
+                                    options={{
+                                        strokeColor: '#2E7D32',
+                                        strokeOpacity: 0.85,
+                                        strokeWeight: 5,
+                                    }}
+                                />
+                            )}
+                        </GoogleMap>
+                    )}
                 </div>
             </div>
         </div>

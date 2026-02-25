@@ -79,7 +79,7 @@ const SettingsPage = () => {
     const fetchCollectors = async () => {
         try {
             const res = await api.get('/auth/users');
-            setCollectors(res.data.filter(u => (u.isCollector || u.role === 'admin') && u.phone));
+            setCollectors(res.data.filter(u => u.isCollector && u.phone));
         } catch (error) {
             console.error('Error fetching collectors:', error);
         }
