@@ -40,6 +40,126 @@ const haversineDistance = (lat1, lon1, lat2, lon2) => {
 // Default HQ/Base location (Aracaju - SE)
 const DEFAULT_BASE = { lat: -10.9472, lng: -37.0731, name: 'Base da Empresa' };
 
+const MapContent = ({ apiKey, baseLat, baseLng, baseName, selectedClients, isRouteActive, optimizedOrder, routeWaypoints, mapRef }) => {
+    const [activeInfoWindow, setActiveInfoWindow] = useState(null);
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: apiKey,
+        preventGoogleFontsLoading: true
+    });
+
+    const defaultCenter = { lat: baseLat, lng: baseLng };
+
+    const onLoad = useCallback(function callback(map) {
+        mapRef.current = map;
+    }, [mapRef]);
+
+    const onUnmount = useCallback(function callback(map) {
+        mapRef.current = null;
+    }, [mapRef]);
+
+    if (!isLoaded) {
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#666' }}>
+                Carregando Google Maps...
+            </div>
+        );
+    }
+
+    return (
+        <GoogleMap
+            mapContainerStyle={{ width: '100%', height: '100%' }}
+            center={defaultCenter}
+            zoom={12}
+            options={mapOptions}
+            onLoad={onLoad}
+            onUnmount={onUnmount}
+            onClick={() => setActiveInfoWindow(null)}
+        >
+            {/* Base/HQ Marker */}
+            <Marker
+                position={{ lat: baseLat, lng: baseLng }}
+                icon={{
+                    url: createBaseIconUrl(),
+                    scaledSize: new window.google.maps.Size(21, 34),
+                    anchor: new window.google.maps.Point(10, 34)
+                }}
+                onClick={() => setActiveInfoWindow('base')}
+            >
+                {activeInfoWindow === 'base' && (
+                    <InfoWindow onCloseClick={() => setActiveInfoWindow(null)}>
+                        <div>
+                            <div style={{
+                                fontSize: '0.7rem', fontWeight: '700',
+                                color: '#16a34a', marginBottom: '0.25rem',
+                                textTransform: 'uppercase', letterSpacing: '0.05em',
+                            }}>
+                                📍 Ponto de partida e retorno
+                            </div>
+                            <strong style={{ color: '#000' }}>{baseName}</strong>
+                        </div>
+                    </InfoWindow>
+                )}
+            </Marker>
+
+            {/* Markers for selected clients */}
+            {selectedClients.map((client, idx) => {
+                if (!client.Address || !client.Address.latitude) return null;
+
+                const routeIndex = isRouteActive
+                    ? optimizedOrder.findIndex(c => c.id === client.id)
+                    : -1;
+
+                const markerIcon = isRouteActive && routeIndex >= 0
+                    ? {
+                        url: createNumberedIconUrl(routeIndex + 1),
+                    }
+                    : undefined; // Default Google Maps red pin
+
+                return (
+                    <Marker
+                        key={client.id}
+                        position={{ lat: client.Address.latitude, lng: client.Address.longitude }}
+                        icon={markerIcon}
+                        onClick={() => setActiveInfoWindow(`client-${client.id}`)}
+                    >
+                        {activeInfoWindow === `client-${client.id}` && (
+                            <InfoWindow onCloseClick={() => setActiveInfoWindow(null)}>
+                                <div style={{ color: '#000' }}>
+                                    {isRouteActive && routeIndex >= 0 && (
+                                        <div style={{
+                                            fontSize: '0.7rem', fontWeight: '700',
+                                            color: 'var(--color-primary)', marginBottom: '0.25rem',
+                                            textTransform: 'uppercase', letterSpacing: '0.05em',
+                                        }}>
+                                            Parada #{routeIndex + 1}
+                                        </div>
+                                    )}
+                                    <strong>{client.name}</strong><br />
+                                    {client.Address.street}, {client.Address.number}<br />
+                                    {client.Address.district}
+                                </div>
+                            </InfoWindow>
+                        )}
+                    </Marker>
+                );
+            })}
+
+            {/* Polyline for Route Waypoints */}
+            {routeWaypoints.length > 1 && (
+                <Polyline
+                    path={routeWaypoints}
+                    options={{
+                        strokeColor: '#2E7D32',
+                        strokeOpacity: 0.85,
+                        strokeWeight: 5,
+                    }}
+                />
+            )}
+        </GoogleMap>
+    );
+};
+
 const RoutePage = () => {
     const [clients, setClients] = useState([]);
     const [selectedClients, setSelectedClients] = useState([]);
@@ -53,7 +173,6 @@ const RoutePage = () => {
 
     // Google Maps API Key state
     const [apiKey, setApiKey] = useState('');
-    const [activeInfoWindow, setActiveInfoWindow] = useState(null);
     const mapRef = useRef(null);
 
     // Base/HQ location — persisted in localStorage
@@ -75,8 +194,6 @@ const RoutePage = () => {
         localStorage.setItem('catoleo_base_name', baseName);
         setShowBaseConfig(false);
     };
-
-    const defaultCenter = { lat: baseLat, lng: baseLng };
 
     // Fetch API Key
     useEffect(() => {
@@ -379,21 +496,6 @@ const RoutePage = () => {
 
     const filteredClients = getFilteredClients();
     const isRouteActive = optimizedOrder.length > 0;
-
-    const onLoad = useCallback(function callback(map) {
-        mapRef.current = map;
-    }, []);
-
-    const onUnmount = useCallback(function callback(map) {
-        mapRef.current = null;
-    }, []);
-
-    const { isLoaded } = useJsApiLoader({
-        id: 'google-map-script',
-        googleMapsApiKey: apiKey,
-        // Optional: only load if we have a key, prevents errors when key is missing/loading
-        preventGoogleFontsLoading: true
-    });
 
     // Styles
     const sidebarStyle = {
@@ -722,107 +824,22 @@ const RoutePage = () => {
                     border: '1px solid #e5e7eb',
                     backgroundColor: 'white'
                 }}>
-                    {!apiKey && (
+                    {!apiKey ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#666' }}>
                             Aguardando chave da API do Maps...
                         </div>
-                    )}
-                    {apiKey && !isLoaded && (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#666' }}>
-                            Carregando Google Maps...
-                        </div>
-                    )}
-                    {apiKey && isLoaded && (
-                        <GoogleMap
-                            mapContainerStyle={{ width: '100%', height: '100%' }}
-                            center={defaultCenter}
-                            zoom={12}
-                            options={mapOptions}
-                            onLoad={onLoad}
-                            onUnmount={onUnmount}
-                            onClick={() => setActiveInfoWindow(null)}
-                        >
-                            {/* Base/HQ Marker */}
-                            <Marker
-                                position={{ lat: baseLat, lng: baseLng }}
-                                icon={{
-                                    url: createBaseIconUrl(),
-                                    scaledSize: new window.google.maps.Size(21, 34),
-                                    anchor: new window.google.maps.Point(10, 34)
-                                }}
-                                onClick={() => setActiveInfoWindow('base')}
-                            >
-                                {activeInfoWindow === 'base' && (
-                                    <InfoWindow onCloseClick={() => setActiveInfoWindow(null)}>
-                                        <div>
-                                            <div style={{
-                                                fontSize: '0.7rem', fontWeight: '700',
-                                                color: '#16a34a', marginBottom: '0.25rem',
-                                                textTransform: 'uppercase', letterSpacing: '0.05em',
-                                            }}>
-                                                📍 Ponto de partida e retorno
-                                            </div>
-                                            <strong style={{ color: '#000' }}>{baseName}</strong>
-                                        </div>
-                                    </InfoWindow>
-                                )}
-                            </Marker>
-
-                            {/* Markers for selected clients */}
-                            {selectedClients.map((client, idx) => {
-                                if (!client.Address || !client.Address.latitude) return null;
-
-                                const routeIndex = isRouteActive
-                                    ? optimizedOrder.findIndex(c => c.id === client.id)
-                                    : -1;
-
-                                const markerIcon = isRouteActive && routeIndex >= 0
-                                    ? {
-                                        url: createNumberedIconUrl(routeIndex + 1),
-                                    }
-                                    : undefined; // Default Google Maps red pin
-
-                                return (
-                                    <Marker
-                                        key={client.id}
-                                        position={{ lat: client.Address.latitude, lng: client.Address.longitude }}
-                                        icon={markerIcon}
-                                        onClick={() => setActiveInfoWindow(`client-${client.id}`)}
-                                    >
-                                        {activeInfoWindow === `client-${client.id}` && (
-                                            <InfoWindow onCloseClick={() => setActiveInfoWindow(null)}>
-                                                <div style={{ color: '#000' }}>
-                                                    {isRouteActive && routeIndex >= 0 && (
-                                                        <div style={{
-                                                            fontSize: '0.7rem', fontWeight: '700',
-                                                            color: 'var(--color-primary)', marginBottom: '0.25rem',
-                                                            textTransform: 'uppercase', letterSpacing: '0.05em',
-                                                        }}>
-                                                            Parada #{routeIndex + 1}
-                                                        </div>
-                                                    )}
-                                                    <strong>{client.name}</strong><br />
-                                                    {client.Address.street}, {client.Address.number}<br />
-                                                    {client.Address.district}
-                                                </div>
-                                            </InfoWindow>
-                                        )}
-                                    </Marker>
-                                );
-                            })}
-
-                            {/* Polyline for Route Waypoints */}
-                            {routeWaypoints.length > 1 && (
-                                <Polyline
-                                    path={routeWaypoints}
-                                    options={{
-                                        strokeColor: '#2E7D32',
-                                        strokeOpacity: 0.85,
-                                        strokeWeight: 5,
-                                    }}
-                                />
-                            )}
-                        </GoogleMap>
+                    ) : (
+                        <MapContent
+                            apiKey={apiKey}
+                            baseLat={baseLat}
+                            baseLng={baseLng}
+                            baseName={baseName}
+                            selectedClients={selectedClients}
+                            isRouteActive={isRouteActive}
+                            optimizedOrder={optimizedOrder}
+                            routeWaypoints={routeWaypoints}
+                            mapRef={mapRef}
+                        />
                     )}
                 </div>
             </div>
