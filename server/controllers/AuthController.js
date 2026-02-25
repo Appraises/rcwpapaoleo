@@ -31,7 +31,7 @@ exports.register = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'name', 'email'],
+            attributes: ['id', 'name', 'email', 'phone', 'role', 'isCollector'],
             order: [['name', 'ASC']]
         });
         res.json(users);
