@@ -159,13 +159,12 @@ const ClientFormPage = () => {
 
         setGeocoding(true);
         try {
-            // Using Nominatim OpenStreetMap API (Free, rate limited)
-            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
-            const data = await response.json();
+            // Using backend proxy to Google Maps Geocoding API (API key stays server-side)
+            const response = await api.get('/settings/geocode', { params: { address: query } });
+            const { lat, lng } = response.data;
 
-            if (data && data.length > 0) {
-                const { lat, lon } = data[0];
-                setFormData(prev => ({ ...prev, latitude: lat, longitude: lon }));
+            if (lat && lng) {
+                setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
             }
         } catch (error) {
             console.error('Geocoding error:', error);

@@ -1,12 +1,10 @@
 // server/services/GeocodingService.js
-// Server-side geocoding using Nominatim (OpenStreetMap) — free, no API key needed.
+// Server-side geocoding using Google Maps Geocoding API.
 // Used as a fallback when clients don't have lat/lng from the frontend geocoding.
-
-function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 class GeocodingService {
     /**
-     * Geocode an address string to { lat, lng } using Nominatim.
+     * Geocode an address string to { lat, lng } using Google Maps Geocoding API.
      * Returns null if unable to geocode.
      *
      * @param {object} params
@@ -15,9 +13,16 @@ class GeocodingService {
      * @param {string} params.district
      * @param {string} params.city
      * @param {string} params.state
+     * @param {string} params.zip
      * @returns {Promise<{lat: number, lng: number}|null>}
      */
     static async geocode({ street, number, district, city, state, zip }) {
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+            console.error('[GeocodingService] ❌ GOOGLE_MAPS_API_KEY not set in environment');
+            return null;
+        }
+
         // Build multiple query variations — try most specific first, then broader
         const queries = [];
 
@@ -35,62 +40,57 @@ class GeocodingService {
 
         // 1. Street + Number + District + City
         if (street && number && district && city && state) {
-            queries.push(`${street}, ${number}, ${district}, ${city} - ${state}`);
+            queries.push(`${street}, ${number}, ${district}, ${city} - ${state}, Brasil`);
         }
         // 2. Street + Number + City (no district)
         if (street && number && city && state && !district) {
-            queries.push(`${street}, ${number}, ${city} - ${state}`);
+            queries.push(`${street}, ${number}, ${city} - ${state}, Brasil`);
         }
         // 3. Street + District + City (no number)
         if (street && district && city && state) {
-            queries.push(`${street}, ${district}, ${city} - ${state}`);
+            queries.push(`${street}, ${district}, ${city} - ${state}, Brasil`);
         }
         // 4. Street + City (broadest street search)
         if (street && city && state) {
-            queries.push(`${street}, ${city} - ${state}`);
+            queries.push(`${street}, ${city} - ${state}, Brasil`);
         }
         // 5. District + City
         if (district && city && state) {
-            queries.push(`${district}, ${city} - ${state}`);
+            queries.push(`${district}, ${city} - ${state}, Brasil`);
         }
 
         if (queries.length === 0) {
             return null;
         }
 
-        // Bounding box for Aracaju, SE (approx: minLon, minLat, maxLon, maxLat)
-        // This heavily biases the search to avoid matching random streets in other cities/states
-        const isAracaju = city && city.toLowerCase().includes('aracaju');
-        const bboxParam = isAracaju ? '&viewbox=-37.20,-10.80,-36.95,-11.10&bounded=1' : '';
-
         for (const query of queries) {
             try {
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=br${bboxParam}`;
+                const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${apiKey}&language=pt-BR&region=br`;
 
-                const response = await fetch(url, {
-                    headers: {
-                        'User-Agent': 'CatOleo-DispatchService/1.0'
-                    }
-                });
+                const response = await fetch(url);
 
                 if (!response.ok) {
-                    console.warn(`[GeocodingService] Nominatim returned ${response.status} for "${query}"`);
+                    console.warn(`[GeocodingService] Google API returned ${response.status} for "${query}"`);
                     continue;
                 }
 
                 const data = await response.json();
 
-                if (data && data.length > 0) {
-                    const lat = parseFloat(data[0].lat);
-                    const lng = parseFloat(data[0].lon);
+                if (data.status === 'OK' && data.results && data.results.length > 0) {
+                    const location = data.results[0].geometry.location;
+                    const lat = location.lat;
+                    const lng = location.lng;
                     console.log(`[GeocodingService] ✅ Geocoded "${query}" → (${lat}, ${lng})`);
                     return { lat, lng };
                 }
 
-                console.log(`[GeocodingService] ⚠️ No results for "${query}", trying next variation...`);
+                if (data.status === 'ZERO_RESULTS') {
+                    console.log(`[GeocodingService] ⚠️ No results for "${query}", trying next variation...`);
+                    continue;
+                }
 
-                // Nominatim rate limit: 1 req/sec
-                await delay(1100);
+                // Handle API errors (OVER_QUERY_LIMIT, REQUEST_DENIED, INVALID_REQUEST, etc.)
+                console.warn(`[GeocodingService] ⚠️ Google API status: ${data.status} for "${query}" — ${data.error_message || ''}`);
 
             } catch (error) {
                 console.error(`[GeocodingService] ❌ Error geocoding "${query}":`, error.message);
@@ -99,6 +99,45 @@ class GeocodingService {
 
         console.warn(`[GeocodingService] ❌ Could not geocode with any query variation`);
         return null;
+    }
+
+    /**
+     * Simple geocode from a free-text address string.
+     * Used by the frontend proxy route.
+     *
+     * @param {string} address - Full address string
+     * @returns {Promise<{lat: number, lng: number}|null>}
+     */
+    static async geocodeAddress(address) {
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+            console.error('[GeocodingService] ❌ GOOGLE_MAPS_API_KEY not set in environment');
+            return null;
+        }
+
+        try {
+            const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}&language=pt-BR&region=br`;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                console.warn(`[GeocodingService] Google API returned ${response.status} for "${address}"`);
+                return null;
+            }
+
+            const data = await response.json();
+
+            if (data.status === 'OK' && data.results && data.results.length > 0) {
+                const location = data.results[0].geometry.location;
+                console.log(`[GeocodingService] ✅ Geocoded "${address}" → (${location.lat}, ${location.lng})`);
+                return { lat: location.lat, lng: location.lng };
+            }
+
+            console.warn(`[GeocodingService] ⚠️ Google API status: ${data.status} for "${address}"`);
+            return null;
+        } catch (error) {
+            console.error(`[GeocodingService] ❌ Error geocoding "${address}":`, error.message);
+            return null;
+        }
     }
 
     /**

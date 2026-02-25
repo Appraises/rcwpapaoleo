@@ -169,12 +169,11 @@ class EvolutionService {
             await this.sendPresence(remoteJid, 'composing');
 
             // Step 2: Calculate typing time proportional to message length
-            // Real mobile typing: ~5-12 chars/sec with pauses and corrections
+            // Tuned for: ~3-7s (short), ~13-33s (medium), ~33-42s (long)
             const charCount = message.length;
-            const charsPerSec = randomInt(5, 12);
+            const charsPerSec = randomInt(6, 15);
             const rawTypingMs = (charCount / charsPerSec) * 1000;
-            // Floor at 3s (even short messages take a moment), cap at 45s (don't keep them waiting forever)
-            const typingMs = Math.max(3000, Math.min(rawTypingMs, 45000));
+            const typingMs = Math.max(3000, Math.min(rawTypingMs, 42000));
             console.log(`[EvolutionService] ⏱️ Typing for ${(typingMs / 1000).toFixed(1)}s (${charCount} chars at ~${charsPerSec} c/s)...`);
             await delay(typingMs);
 

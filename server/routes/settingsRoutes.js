@@ -2,6 +2,26 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middlewares/authMiddleware');
 const { SystemSetting } = require('../models');
+const GeocodingService = require('../services/GeocodingService');
+
+// GET /api/settings/geocode?address=... — proxy geocoding via Google Maps (protects API key)
+router.get('/geocode', authMiddleware, async (req, res) => {
+    try {
+        const { address } = req.query;
+        if (!address) {
+            return res.status(400).json({ error: 'Missing address parameter' });
+        }
+        const result = await GeocodingService.geocodeAddress(address);
+        if (result) {
+            res.json(result);
+        } else {
+            res.json({ lat: null, lng: null });
+        }
+    } catch (error) {
+        console.error('[Geocode Proxy] Error:', error.message);
+        res.status(500).json({ error: 'Geocoding failed' });
+    }
+});
 
 // GET /api/settings — retrieve all settings (or specific keys)
 router.get('/', authMiddleware, async (req, res) => {
