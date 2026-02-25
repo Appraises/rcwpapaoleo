@@ -202,17 +202,17 @@ exports.updateClient = async (req, res) => {
 
 exports.deleteClient = async (req, res) => {
     try {
-        const client = await Client.findByPk(req.params.id);
-        if (!client) return res.status(404).json({ error: 'Client not found' });
+        const sequelize = require('../config/database');
+        const clientId = req.params.id;
 
-        // Explicitly delete associated records first (SQLite CASCADE can be unreliable)
-        const { CollectionRequest, Collection } = require('../models');
-        await Address.destroy({ where: { clientId: client.id } });
-        await ClientPhone.destroy({ where: { clientId: client.id } });
-        await CollectionRequest.destroy({ where: { clientId: client.id } });
-        await Collection.destroy({ where: { clientId: client.id } });
+        // Use raw SQL to bypass any ORM schema issues
+        await sequelize.query('DELETE FROM Addresses WHERE clientId = ?', { replacements: [clientId] });
+        await sequelize.query('DELETE FROM ClientPhones WHERE clientId = ?', { replacements: [clientId] });
+        await sequelize.query('DELETE FROM CollectionRequests WHERE clientId = ?', { replacements: [clientId] });
+        await sequelize.query('DELETE FROM Collections WHERE clientId = ?', { replacements: [clientId] });
+        await sequelize.query('DELETE FROM Clients WHERE id = ?', { replacements: [clientId] });
 
-        await client.destroy();
+        console.log(`[ClientController] 🗑️ Client ${clientId} deleted (raw SQL)`);
         res.status(204).send();
     } catch (error) {
         console.error('[ClientController] ❌ deleteClient error:', error);
