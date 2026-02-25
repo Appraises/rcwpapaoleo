@@ -128,6 +128,7 @@ const ClientFormPage = () => {
         tradeName: '',
         document: '',
         phone: '',
+        additionalPhones: [],
         address: '', // legacy
         street: '',
         number: '',
@@ -229,23 +230,24 @@ const ClientFormPage = () => {
                     const addressData = client.Address || {};
 
                     setFormData({
-                        name: client.name,
+                        name: client.name || '',
                         tradeName: client.tradeName || '',
                         document: client.document ? formatDocument(client.document) : '',
                         phone: client.phone ? formatPhone(client.phone) : '',
+                        additionalPhones: (client.additionalPhones || []).map(p => formatPhone(p.phone)),
+                        address: client.address || '', // legacy
                         street: addressData.street || '',
                         number: addressData.number || '',
                         district: addressData.district || '',
                         city: addressData.city || '',
                         state: addressData.state || '',
-                        zip: addressData.zip || '',
+                        zip: addressData.zip ? formatCep(addressData.zip) : '',
                         reference: addressData.reference || '',
                         latitude: addressData.latitude || '',
                         longitude: addressData.longitude || '',
-                        pricePerLiter: client.pricePerLiter,
+                        pricePerLiter: client.pricePerLiter || '',
                         averageOilLiters: client.averageOilLiters || '',
-                        observations: client.observations,
-                        address: client.address // legacy
+                        observations: client.observations || '',
                     });
                 } catch (err) {
                     setError('Erro ao carregar dados do cliente.');
@@ -257,19 +259,57 @@ const ClientFormPage = () => {
 
     const handleChange = (e) => {
         let { name, value } = e.target;
-
+        if (name === 'phone') value = formatPhone(value);
+        if (name === 'zip') value = formatCep(value);
         if (name === 'document') {
-            value = formatDocument(value);
-            setDocError('');
+            value = value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                if (value.length === 14) {
+                    if (!isValidCPF(value.replace(/\D/g, ''))) setDocError('CPF inválido'); else setDocError('');
+                } else {
+                    setDocError('');
+                }
+            } else {
+                value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+                value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+                value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+                value = value.replace(/(\d{4})(\d)/, '$1-$2');
+                if (value.length > 18) value = value.substring(0, 18);
+                if (value.length === 18) {
+                    if (!isValidCNPJ(value.replace(/\D/g, ''))) setDocError('CNPJ inválido'); else setDocError('');
+                } else {
+                    setDocError('');
+                }
+            }
         }
-        if (name === 'phone') {
-            value = formatPhone(value);
-        }
-        if (name === 'zip') {
-            value = formatCep(value);
-        }
-
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleAddPhone = () => {
+        setFormData(prev => ({
+            ...prev,
+            additionalPhones: [...prev.additionalPhones, '']
+        }));
+    };
+
+    const handleExtraPhoneChange = (index, value) => {
+        const formatted = formatPhone(value);
+        setFormData(prev => {
+            const newPhones = [...prev.additionalPhones];
+            newPhones[index] = formatted;
+            return { ...prev, additionalPhones: newPhones };
+        });
+    };
+
+    const handleRemoveExtraPhone = (index) => {
+        setFormData(prev => {
+            const newPhones = [...prev.additionalPhones];
+            newPhones.splice(index, 1);
+            return { ...prev, additionalPhones: newPhones };
+        });
     };
 
     const containerRecommendation = useMemo(() => {
@@ -283,14 +323,16 @@ const ClientFormPage = () => {
         setDocError('');
 
         const rawDoc = formData.document.replace(/\D/g, '');
-        if (rawDoc.length <= 11 && !isValidCPF(rawDoc)) {
-            setDocError('CPF inválido');
-            setLoading(false);
-            return;
-        } else if (rawDoc.length > 11 && !isValidCNPJ(rawDoc)) {
-            setDocError('CNPJ inválido');
-            setLoading(false);
-            return;
+        if (rawDoc.length > 0) { // Only validate if document is provided
+            if (rawDoc.length <= 11 && !isValidCPF(rawDoc)) {
+                setDocError('CPF inválido');
+                setLoading(false);
+                return;
+            } else if (rawDoc.length > 11 && !isValidCNPJ(rawDoc)) {
+                setDocError('CNPJ inválido');
+                setLoading(false);
+                return;
+            }
         }
 
         try {
@@ -298,6 +340,7 @@ const ClientFormPage = () => {
                 ...formData,
                 document: formData.document.replace(/\D/g, ''),
                 phone: formData.phone.replace(/\D/g, ''),
+                additionalPhones: formData.additionalPhones.filter(p => p).map(p => p.replace(/\D/g, '')),
                 zip: formData.zip.replace(/\D/g, ''),
                 pricePerLiter: formData.pricePerLiter ? parseFloat(formData.pricePerLiter.toString().replace(/\./g, '').replace(',', '.')) : 0,
                 averageOilLiters: formData.averageOilLiters ? parseFloat(formData.averageOilLiters.toString().replace(/\./g, '').replace(',', '.')) : 0
@@ -370,15 +413,66 @@ const ClientFormPage = () => {
                             {docError && <span style={{ color: 'var(--color-error)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{docError}</span>}
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Telefone *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Telefone Principal (WhatsApp)*</label>
                             <input
-                                type="text"
+                                type="tel"
                                 name="phone"
+                                placeholder="(00) 00000-0000"
                                 value={formData.phone}
                                 onChange={handleChange}
                                 required
+                                maxLength="15"
                                 style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
                             />
+                            {formData.additionalPhones.map((phone, index) => (
+                                <div key={index} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
+                                    <input
+                                        type="tel"
+                                        placeholder="(00) 00000-0000"
+                                        value={phone}
+                                        onChange={(e) => handleExtraPhoneChange(index, e.target.value)}
+                                        maxLength="15"
+                                        style={{ flex: 1, padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveExtraPhone(index)}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: '#ef4444',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            padding: '0.5rem'
+                                        }}
+                                        title="Remover telefone"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={handleAddPhone}
+                                style={{
+                                    marginTop: '0.5rem',
+                                    background: '#f1f5f9',
+                                    border: '1px dashed #cbd5e1',
+                                    color: '#475569',
+                                    padding: '0.5rem',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem',
+                                    fontSize: '0.875rem',
+                                    width: '100%'
+                                }}
+                            >
+                                <Plus size={16} /> Adicionar número extra
+                            </button>
                         </div>
                     </div>
 

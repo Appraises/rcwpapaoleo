@@ -1,11 +1,11 @@
-const { Client, Address } = require('../models');
+const { Client, Address, ClientPhone } = require('../models');
 const { Op } = require('sequelize');
 const GeocodingService = require('../services/GeocodingService');
 
 exports.createClient = async (req, res) => {
     try {
         const {
-            name, tradeName, document, phone,
+            name, tradeName, document, phone, additionalPhones,
             street, number, district, city, state, zip, reference, latitude, longitude,
             pricePerLiter, averageOilLiters, observations
         } = req.body;
@@ -36,7 +36,18 @@ exports.createClient = async (req, res) => {
             latitude: finalLat, longitude: finalLng
         });
 
-        const clientWithAddress = await Client.findByPk(client.id, { include: Address });
+        if (additionalPhones && Array.isArray(additionalPhones)) {
+            const extraPhones = additionalPhones
+                .filter(p => !!p)
+                .map(p => ({ clientId: client.id, phone: p }));
+            if (extraPhones.length > 0) {
+                await ClientPhone.bulkCreate(extraPhones);
+            }
+        }
+
+        const clientWithAddress = await Client.findByPk(client.id, {
+            include: [Address, { model: ClientPhone, as: 'additionalPhones' }]
+        });
         res.status(201).json(clientWithAddress);
     } catch (error) {
         if (error.name === 'SequelizeUniqueConstraintError') {
@@ -72,11 +83,14 @@ exports.getAllClients = async (req, res) => {
         const clients = await Client.findAll({
             where,
             order,
-            include: [{
-                model: Address,
-                where: city ? addressWhere : undefined,
-                required: !!city  // INNER JOIN when filtering by city, LEFT JOIN otherwise
-            }]
+            include: [
+                {
+                    model: Address,
+                    where: city ? addressWhere : undefined,
+                    required: !!city  // INNER JOIN when filtering by city, LEFT JOIN otherwise
+                },
+                { model: ClientPhone, as: 'additionalPhones' }
+            ]
         });
         res.json(clients);
     } catch (error) {
@@ -101,7 +115,9 @@ exports.getDistinctCities = async (req, res) => {
 
 exports.getClientById = async (req, res) => {
     try {
-        const client = await Client.findByPk(req.params.id, { include: Address });
+        const client = await Client.findByPk(req.params.id, {
+            include: [Address, { model: ClientPhone, as: 'additionalPhones' }]
+        });
         if (!client) return res.status(404).json({ error: 'Client not found' });
         res.json(client);
     } catch (error) {
@@ -114,7 +130,7 @@ exports.updateClient = async (req, res) => {
         const client = await Client.findByPk(req.params.id, { include: Address });
         if (!client) return res.status(404).json({ error: 'Client not found' });
 
-        const { name, tradeName, document, phone, address, street, number, district, city, state, zip, reference, pricePerLiter, averageOilLiters, latitude, longitude, observations } = req.body;
+        const { name, tradeName, document, phone, additionalPhones, address, street, number, district, city, state, zip, reference, pricePerLiter, averageOilLiters, latitude, longitude, observations } = req.body;
 
         // Server-side geocoding if coordinates not provided OR if address data changed
         let finalLat = latitude;
@@ -154,7 +170,22 @@ exports.updateClient = async (req, res) => {
             });
         }
 
-        const updatedClient = await Client.findByPk(client.id, { include: Address });
+        if (additionalPhones && Array.isArray(additionalPhones)) {
+            // Drop existing additional phones and recreate to keep it simple
+            await ClientPhone.destroy({ where: { clientId: client.id } });
+
+            const extraPhones = additionalPhones
+                .filter(p => !!p)
+                .map(p => ({ clientId: client.id, phone: p }));
+
+            if (extraPhones.length > 0) {
+                await ClientPhone.bulkCreate(extraPhones);
+            }
+        }
+
+        const updatedClient = await Client.findByPk(client.id, {
+            include: [Address, { model: ClientPhone, as: 'additionalPhones' }]
+        });
         res.json(updatedClient);
     } catch (error) {
         res.status(400).json({ error: error.message });

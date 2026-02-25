@@ -189,7 +189,15 @@ const ClientDetailPage = () => {
 
                     <div style={{ display: 'grid', gap: '0.75rem', color: '#555' }}>
                         <p><strong>CNPJ/CPF:</strong> {formatDocument(client.document)}</p>
-                        <p><strong>Telefone:</strong> {formatPhone(client.phone)}</p>
+                        <p><strong>Telefone Principal:</strong> {formatPhone(client.phone)}</p>
+                        {client.additionalPhones && client.additionalPhones.length > 0 && (
+                            <div style={{ paddingLeft: '0.5rem', borderLeft: '2px solid #e2e8f0', marginTop: '-0.25rem', marginBottom: '0.5rem' }}>
+                                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Números Adicionais:</p>
+                                {client.additionalPhones.map((p, idx) => (
+                                    <p key={idx} style={{ margin: '0', fontSize: '0.9rem', color: '#475569' }}>• {formatPhone(p.phone)}</p>
+                                ))}
+                            </div>
+                        )}
                         <p><strong>Endereço:</strong> {client.address}</p>
 
                         {((client.latitude && client.longitude) || (client.Address?.latitude && client.Address?.longitude)) && (

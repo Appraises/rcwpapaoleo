@@ -1,4 +1,4 @@
-const { Client, User } = require('../models');
+const { Client, User, ClientPhone } = require('../models');
 const { Op } = require('sequelize');
 const QueueService = require('../services/QueueService');
 const CollectorQueueService = require('../services/CollectorQueueService');
@@ -91,17 +91,42 @@ exports.handleEvolutionWebhook = async (req, res) => {
             }
 
             // ── Try matching as a CLIENT ──────────────────────────────
+            // Include additional phones array to check multiple numbers per client
             const allClients = await Client.findAll({
-                attributes: ['id', 'phone']
+                attributes: ['id', 'phone'],
+                include: [{
+                    model: ClientPhone,
+                    as: 'additionalPhones',
+                    attributes: ['phone']
+                }]
             });
             console.log(`[Webhook] Total clients in DB: ${allClients.length}`);
 
             let client = null;
             for (const c of allClients) {
-                if (!c.phone) continue;
-                const cleanedDbPhone = c.phone.replace(/\D/g, '');
-                console.log(`[Webhook]   Comparing DB phone "${c.phone}" (cleaned: "${cleanedDbPhone}") with last8: "${lastEight}" => endsWith: ${cleanedDbPhone.endsWith(lastEight)}`);
-                if (cleanedDbPhone.endsWith(lastEight)) {
+                // 1) Check main phone
+                let matched = false;
+                if (c.phone) {
+                    const cleanedDbPhone = c.phone.replace(/\D/g, '');
+                    console.log(`[Webhook]   Comparing DB phone "${c.phone}" (cleaned: "${cleanedDbPhone}") with last8: "${lastEight}" => endsWith: ${cleanedDbPhone.endsWith(lastEight)}`);
+                    if (cleanedDbPhone.endsWith(lastEight)) {
+                        matched = true;
+                    }
+                }
+
+                // 2) Check additional phones if main didn't match
+                if (!matched && c.additionalPhones && c.additionalPhones.length > 0) {
+                    for (const cp of c.additionalPhones) {
+                        const cleanedExtraPhone = cp.phone.replace(/\D/g, '');
+                        console.log(`[Webhook]   Comparing DB *EXTRA* phone "${cp.phone}" (cleaned: "${cleanedExtraPhone}") with last8: "${lastEight}" => endsWith: ${cleanedExtraPhone.endsWith(lastEight)}`);
+                        if (cleanedExtraPhone.endsWith(lastEight)) {
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (matched) {
                     client = c;
                     break;
                 }

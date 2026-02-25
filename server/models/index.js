@@ -6,10 +6,14 @@ const SystemSetting = require('./SystemSetting');
 const Address = require('./Address');
 const Report = require('./Report');
 const CollectionRequest = require('./CollectionRequest');
+const ClientPhone = require('./ClientPhone');
 
 // Associations
 Client.hasOne(Address, { foreignKey: 'clientId', onDelete: 'CASCADE' });
 Address.belongsTo(Client, { foreignKey: 'clientId' });
+
+Client.hasMany(ClientPhone, { foreignKey: 'clientId', onDelete: 'CASCADE', as: 'additionalPhones' });
+ClientPhone.belongsTo(Client, { foreignKey: 'clientId' });
 
 Client.hasMany(Collection, { foreignKey: 'clientId', onDelete: 'CASCADE' });
 Collection.belongsTo(Client, { foreignKey: 'clientId' });
@@ -37,5 +41,6 @@ module.exports = {
     Address,
     Report,
     CollectionRequest,
+    ClientPhone,
     syncDatabase,
 };
