@@ -116,15 +116,23 @@ exports.updateClient = async (req, res) => {
 
         const { name, tradeName, document, phone, address, street, number, district, city, state, zip, reference, pricePerLiter, averageOilLiters, latitude, longitude, observations } = req.body;
 
-        // Server-side geocoding if coordinates not provided and address changed
+        // Server-side geocoding if coordinates not provided OR if address data changed
         let finalLat = latitude;
         let finalLng = longitude;
-        if (!finalLat || !finalLng) {
+
+        const addressChanged =
+            street !== client.Address?.street ||
+            number !== client.Address?.number ||
+            district !== client.Address?.district ||
+            city !== client.Address?.city ||
+            zip !== client.Address?.zip;
+
+        if (!finalLat || !finalLng || addressChanged) {
             const coords = await GeocodingService.geocode({ street, number, district, city, state, zip });
             if (coords) {
                 finalLat = coords.lat;
                 finalLng = coords.lng;
-                console.log(`[ClientController] 🌍 Geocoded "${name}" → (${finalLat}, ${finalLng})`);
+                console.log(`[ClientController] 🌍 Re-geocoded "${name}" → (${finalLat}, ${finalLng})`);
             }
         }
 

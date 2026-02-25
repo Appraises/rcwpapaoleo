@@ -26,6 +26,7 @@ class GeocodingService {
             if (cleanZip.length === 8) {
                 const formattedZip = `${cleanZip.substring(0, 5)}-${cleanZip.substring(5)}`;
                 if (street && number && district) queries.push(`${street}, ${number}, ${district}, ${formattedZip}, Brasil`);
+                if (street && number && city) queries.push(`${street}, ${number}, ${city}, ${formattedZip}, Brasil`);
                 if (street && number) queries.push(`${street}, ${number}, ${formattedZip}, Brasil`);
                 if (street && district) queries.push(`${street}, ${district}, ${formattedZip}, Brasil`);
                 if (street) queries.push(`${street}, ${formattedZip}, Brasil`);
@@ -34,32 +35,37 @@ class GeocodingService {
 
         // 1. Street + Number + District + City
         if (street && number && district && city && state) {
-            queries.push(`${street}, ${number}, ${district}, ${city} - ${state}, Brasil`);
+            queries.push(`${street}, ${number}, ${district}, ${city} - ${state}`);
         }
         // 2. Street + Number + City (no district)
         if (street && number && city && state && !district) {
-            queries.push(`${street}, ${number}, ${city} - ${state}, Brasil`);
+            queries.push(`${street}, ${number}, ${city} - ${state}`);
         }
         // 3. Street + District + City (no number)
         if (street && district && city && state) {
-            queries.push(`${street}, ${district}, ${city} - ${state}, Brasil`);
+            queries.push(`${street}, ${district}, ${city} - ${state}`);
         }
         // 4. Street + City (broadest street search)
         if (street && city && state) {
-            queries.push(`${street}, ${city} - ${state}, Brasil`);
+            queries.push(`${street}, ${city} - ${state}`);
         }
         // 5. District + City
         if (district && city && state) {
-            queries.push(`${district}, ${city} - ${state}, Brasil`);
+            queries.push(`${district}, ${city} - ${state}`);
         }
 
         if (queries.length === 0) {
             return null;
         }
 
+        // Bounding box for Aracaju, SE (approx: minLon, minLat, maxLon, maxLat)
+        // This heavily biases the search to avoid matching random streets in other cities/states
+        const isAracaju = city && city.toLowerCase().includes('aracaju');
+        const bboxParam = isAracaju ? '&viewbox=-37.20,-10.80,-36.95,-11.10&bounded=1' : '';
+
         for (const query of queries) {
             try {
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=br`;
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=br${bboxParam}`;
 
                 const response = await fetch(url, {
                     headers: {
