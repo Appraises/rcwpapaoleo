@@ -205,9 +205,17 @@ exports.deleteClient = async (req, res) => {
         const client = await Client.findByPk(req.params.id);
         if (!client) return res.status(404).json({ error: 'Client not found' });
 
+        // Explicitly delete associated records first (SQLite CASCADE can be unreliable)
+        const { CollectionRequest, Collection } = require('../models');
+        await Address.destroy({ where: { clientId: client.id } });
+        await ClientPhone.destroy({ where: { clientId: client.id } });
+        await CollectionRequest.destroy({ where: { clientId: client.id } });
+        await Collection.destroy({ where: { clientId: client.id } });
+
         await client.destroy();
         res.status(204).send();
     } catch (error) {
+        console.error('[ClientController] ❌ deleteClient error:', error);
         res.status(500).json({ error: error.message });
     }
 };
