@@ -245,11 +245,17 @@ exports.deleteClient = async (req, res) => {
         const sequelize = require('../config/database');
         const clientId = req.params.id;
 
-        // Use raw SQL to bypass any ORM schema issues
-        await sequelize.query('DELETE FROM Addresses WHERE clientId = ?', { replacements: [clientId] });
-        await sequelize.query('DELETE FROM ClientPhones WHERE clientId = ?', { replacements: [clientId] });
-        await sequelize.query('DELETE FROM CollectionRequests WHERE clientId = ?', { replacements: [clientId] });
-        await sequelize.query('DELETE FROM Collections WHERE clientId = ?', { replacements: [clientId] });
+        // Delete each associated table individually - skip if table doesn't exist
+        const tables = ['Addresses', 'ClientPhones', 'CollectionRequests', 'Collections'];
+        for (const table of tables) {
+            try {
+                await sequelize.query(`DELETE FROM "${table}" WHERE clientId = ?`, { replacements: [clientId] });
+            } catch (e) {
+                console.log(`[ClientController] ⚠️ Skipped ${table}: ${e.message}`);
+            }
+        }
+
+        // Delete the client itself
         await sequelize.query('DELETE FROM Clients WHERE id = ?', { replacements: [clientId] });
 
         console.log(`[ClientController] 🗑️ Client ${clientId} deleted (raw SQL)`);
