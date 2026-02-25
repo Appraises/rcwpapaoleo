@@ -27,9 +27,10 @@ CollectionRequest.belongsTo(Client, { foreignKey: 'clientId' });
 const syncDatabase = async () => {
     try {
         await sequelize.sync({ alter: true });
-        console.log('Database synced successfully');
+        console.log('✅ Database synced successfully');
     } catch (error) {
-        console.error('Error syncing database:', error);
+        console.error('❌ Error syncing database:', error.message);
+        console.error('Full sync error:', error);
     }
 };
 

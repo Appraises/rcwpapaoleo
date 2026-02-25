@@ -80,20 +80,28 @@ exports.getAllClients = async (req, res) => {
         if (sort === 'name_asc') order = [['name', 'ASC']];
         if (sort === 'name_desc') order = [['name', 'DESC']];
 
-        const clients = await Client.findAll({
-            where,
-            order,
-            include: [
-                {
-                    model: Address,
-                    where: city ? addressWhere : undefined,
-                    required: !!city  // INNER JOIN when filtering by city, LEFT JOIN otherwise
-                },
-                { model: ClientPhone, as: 'additionalPhones' }
-            ]
-        });
-        res.json(clients);
+        try {
+            const clients = await Client.findAll({
+                where,
+                order,
+                include: [
+                    {
+                        model: Address,
+                        where: city ? addressWhere : undefined,
+                        required: !!city
+                    },
+                    { model: ClientPhone, as: 'additionalPhones' }
+                ]
+            });
+            return res.json(clients);
+        } catch (includeError) {
+            // If include fails (e.g. table schema mismatch), fallback without associations
+            console.error('[ClientController] ⚠️ Query with includes failed, trying fallback:', includeError.message);
+            const clients = await Client.findAll({ where, order });
+            return res.json(clients);
+        }
     } catch (error) {
+        console.error('[ClientController] ❌ getAllClients error:', error);
         res.status(500).json({ error: error.message });
     }
 };
