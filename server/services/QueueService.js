@@ -5,6 +5,7 @@
 const LlmService = require('./LlmService');
 const EvolutionService = require('./EvolutionService');
 const { CollectionRequest, Client } = require('../models');
+const { Op } = require('sequelize');
 
 function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -72,28 +73,56 @@ class QueueService {
             const isCollectionRequest = await LlmService.checkCollectionIntent(task.messageText);
 
             if (isCollectionRequest) {
-                // 2. Save to DB
-                await CollectionRequest.create({
-                    clientId: task.clientId,
-                    message: task.messageText,
-                    status: 'PENDING'
-                });
-                console.log(`[QueueService] ✅ COLLECTION request created for client ${task.clientId}`);
-
-                // 3. Build and humanize the reply
                 const client = await Client.findByPk(task.clientId);
-                if (client && client.phone) {
-                    const baseMessage = `Olá, ${client.name}! ♻️\n\nSeu pedido de coleta foi registrado pelo nosso assistente virtual.\nNossos coletadores já foram avisados e o seu óleo será recolhido o mais breve possível!\n\nA equipe Cat Óleo agradece a sua colaboração.`;
-                    const humanized = EvolutionService.humanizeMessage(baseMessage);
-                    console.log(`[QueueService] 🔄 Humanized: "${humanized.substring(0, 80)}..."`);
+                if (!client) {
+                    console.error(`[QueueService] ❌ Client ${task.clientId} not found in DB`);
+                    return;
+                }
 
-                    // ─── ANTI-BAN: Natural reply sequence ─────────────────
-                    // Step A+B+C: Pickup, Mark as Read, Read delay
-                    await EvolutionService.simulateRead(task.remoteJid, task.messageId);
+                // 2. Check for existing PENDING or DISPATCHED requests for this client
+                const existingRequest = await CollectionRequest.findOne({
+                    where: {
+                        clientId: task.clientId,
+                        status: {
+                            [Op.in]: ['PENDING', 'DISPATCHED']
+                        }
+                    }
+                });
 
-                    // Step D: Typing → Pause → Send
-                    await EvolutionService.simulateTypingAndSend(client.phone, humanized, task.remoteJid);
-                    // ──────────────────────────────────────────────────────
+                if (existingRequest) {
+                    console.log(`[QueueService] ⚠️ Duplicate collection request ignored for client ${task.clientId} (Status: ${existingRequest.status})`);
+
+                    if (client.phone) {
+                        const duplicateMessage = `Olá, ${client.name}! ♻️\n\nNós já recebemos o seu pedido de coleta recentemente e nossa equipe passará em breve para recolher o seu óleo.\n\nAgradecemos o aviso!`;
+                        const humanizedDuplicate = EvolutionService.humanizeMessage(duplicateMessage);
+                        console.log(`[QueueService] 🔄 Humanized (Duplicate): "${humanizedDuplicate.substring(0, 80)}..."`);
+
+                        await EvolutionService.simulateRead(task.remoteJid, task.messageId);
+                        await EvolutionService.simulateTypingAndSend(client.phone, humanizedDuplicate, task.remoteJid);
+                    }
+                } else {
+                    // 3. Save new request to DB
+                    await CollectionRequest.create({
+                        clientId: task.clientId,
+                        message: task.messageText,
+                        status: 'PENDING'
+                    });
+                    console.log(`[QueueService] ✅ COLLECTION request created for client ${task.clientId}`);
+
+                    // 4. Build and humanize the reply
+                    if (client.phone) {
+                        const baseMessage = `Olá, ${client.name}! ♻️\n\nSeu pedido de coleta foi registrado pelo nosso assistente virtual.\nNossos coletadores já foram avisados e o seu óleo será recolhido o mais breve possível!\n\nA equipe Cat Óleo agradece a sua colaboração.`;
+                        const humanized = EvolutionService.humanizeMessage(baseMessage);
+                        console.log(`[QueueService] 🔄 Humanized: "${humanized.substring(0, 80)}..."`);
+
+                        // ─── ANTI-BAN: Natural reply sequence ─────────────────
+                        // Step A+B+C: Pickup, Mark as Read, Read delay
+                        await EvolutionService.simulateRead(task.remoteJid, task.messageId);
+
+                        // Step D: Typing → Pause → Send
+                        await EvolutionService.simulateTypingAndSend(client.phone, humanized, task.remoteJid);
+                        // ──────────────────────────────────────────────────────
+                    }
                 }
             } else {
                 console.log(`[QueueService] ℹ️ NON-COLLECTION. Ignored message from client ${task.clientId}`);
