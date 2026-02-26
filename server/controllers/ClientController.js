@@ -7,7 +7,8 @@ exports.createClient = async (req, res) => {
         const {
             name, tradeName, document, phone, additionalPhones,
             street, number, district, city, state, zip, reference, latitude, longitude,
-            pricePerLiter, averageOilLiters, observations
+            pricePerLiter, averageOilLiters, observations,
+            has25L, has50L, has100L, has200L
         } = req.body;
 
         // Server-side geocoding if frontend didn't provide coordinates
@@ -27,7 +28,8 @@ exports.createClient = async (req, res) => {
         const client = await Client.create({
             name, tradeName, document, phone,
             address: fullAddressLegacy,
-            pricePerLiter, averageOilLiters, observations
+            pricePerLiter, averageOilLiters, observations,
+            has25L, has50L, has100L, has200L
         });
 
         await Address.create({
@@ -159,7 +161,7 @@ exports.updateClient = async (req, res) => {
         }
         if (!client) return res.status(404).json({ error: 'Client not found' });
 
-        const { name, tradeName, document, phone, additionalPhones, address, street, number, district, city, state, zip, reference, pricePerLiter, averageOilLiters, latitude, longitude, observations } = req.body;
+        const { name, tradeName, document, phone, additionalPhones, address, street, number, district, city, state, zip, reference, pricePerLiter, averageOilLiters, latitude, longitude, observations, has25L, has50L, has100L, has200L } = req.body;
 
         // Server-side geocoding if coordinates not provided OR if address data changed
         let finalLat = latitude;
@@ -183,7 +185,7 @@ exports.updateClient = async (req, res) => {
 
         const fullAddress = address || (street ? `${street}, ${number} - ${district}, ${city} - ${state}` : client.address);
 
-        await client.update({ name, tradeName, document, phone, address: fullAddress, pricePerLiter, averageOilLiters, observations });
+        await client.update({ name, tradeName, document, phone, address: fullAddress, pricePerLiter, averageOilLiters, observations, has25L, has50L, has100L, has200L });
 
         // Update or create Address using raw SQL as fallback
         try {

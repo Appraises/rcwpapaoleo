@@ -57,6 +57,22 @@ const Client = sequelize.define('Client', {
         type: DataTypes.FLOAT,
         allowNull: true,
     },
+    has25L: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    has50L: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    has100L: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    has200L: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
 });
 
 module.exports = Client;

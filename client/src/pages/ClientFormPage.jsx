@@ -3,39 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Package, Plus, X } from 'lucide-react';
 import api from '../api/axios';
 
-const CONTAINER_SIZES = [200, 100, 60, 50, 30];
-
-const calculateContainers = (liters) => {
-    if (!liters || liters <= 0) return null;
-
-    const containers = [];
-    let remaining = liters;
-
-    for (const size of CONTAINER_SIZES) {
-        const count = Math.floor(remaining / size);
-        if (count > 0) {
-            containers.push({ size, count });
-            remaining -= count * size;
-        }
-    }
-
-    // If there's leftover, add the smallest container that fits
-    if (remaining > 0) {
-        // Find smallest container that can hold the remaining
-        const smallest = [...CONTAINER_SIZES].reverse().find(s => s >= remaining) || CONTAINER_SIZES[CONTAINER_SIZES.length - 1];
-        const existing = containers.find(c => c.size === smallest);
-        if (existing) {
-            existing.count += 1;
-        } else {
-            containers.push({ size: smallest, count: 1 });
-        }
-    }
-
-    const totalCapacity = containers.reduce((sum, c) => sum + c.size * c.count, 0);
-    const totalContainers = containers.reduce((sum, c) => sum + c.count, 0);
-
-    return { containers, totalCapacity, totalContainers };
-};
+// Removed calculateContainers as per request (Client Receptacles are now manual boolean checkboxes)
 
 // CPF / CNPJ formatting and validation helpers
 const formatDocument = (value) => {
@@ -141,7 +109,11 @@ const ClientFormPage = () => {
         pricePerLiter: '',
         averageOilLiters: '',
         latitude: '',
-        longitude: ''
+        longitude: '',
+        has25L: false,
+        has50L: false,
+        has100L: false,
+        has200L: false
     });
     const [error, setError] = useState('');
     const [docError, setDocError] = useState('');
@@ -248,6 +220,10 @@ const ClientFormPage = () => {
                         pricePerLiter: client.pricePerLiter || '',
                         averageOilLiters: client.averageOilLiters || '',
                         observations: client.observations || '',
+                        has25L: client.has25L || false,
+                        has50L: client.has50L || false,
+                        has100L: client.has100L || false,
+                        has200L: client.has200L || false,
                     });
                 } catch (err) {
                     setError('Erro ao carregar dados do cliente.');
@@ -312,9 +288,6 @@ const ClientFormPage = () => {
         });
     };
 
-    const containerRecommendation = useMemo(() => {
-        return calculateContainers(parseFloat(formData.averageOilLiters));
-    }, [formData.averageOilLiters]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -619,33 +592,44 @@ const ClientFormPage = () => {
                         </div>
                     </div>
 
-                    {containerRecommendation && (
-                        <div style={{
-                            backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0',
-                            padding: '1rem 1.25rem', borderRadius: 'var(--border-radius)',
-                            display: 'flex', flexDirection: 'column', gap: '0.5rem'
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', color: '#166534' }}>
-                                <Package size={18} />
-                                Recipientes Recomendados
-                            </div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                {containerRecommendation.containers.map((c, i) => (
-                                    <span key={i} style={{
-                                        backgroundColor: '#dcfce7', color: '#166534',
-                                        padding: '0.35rem 0.75rem', borderRadius: '999px',
-                                        fontSize: '0.9rem', fontWeight: '500'
-                                    }}>
-                                        {c.count}x {c.size}L
-                                    </span>
-                                ))}
-                            </div>
-                            <small style={{ color: '#15803d' }}>
-                                Capacidade total: {containerRecommendation.totalCapacity}L
-                                ({containerRecommendation.totalContainers} recipiente{containerRecommendation.totalContainers > 1 ? 's' : ''})
-                            </small>
+                    <div style={{ marginTop: '1rem', padding: '1.25rem', backgroundColor: '#f8fafc', borderRadius: 'var(--border-radius)', border: '1px solid #e2e8f0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', color: '#1e293b', marginBottom: '1rem' }}>
+                            <Package size={18} />
+                            Recipientes / Bombonas do Cliente
                         </div>
-                    )}
+                        <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1rem' }}>Selecione quais tamanhos de bombonas estão alocados neste cliente (clique para marcar/desmarcar).</p>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
+                            {[25, 50, 100, 200].map(size => {
+                                const field = `has${size}L`;
+                                const isSelected = formData[field];
+                                return (
+                                    <div
+                                        key={size}
+                                        onClick={() => setFormData(prev => ({ ...prev, [field]: !prev[field] }))}
+                                        style={{
+                                            padding: '1rem',
+                                            borderRadius: '8px',
+                                            border: isSelected ? '2px solid var(--color-primary)' : '1px solid #cbd5e1',
+                                            backgroundColor: isSelected ? '#f0fdf4' : 'white',
+                                            color: isSelected ? 'var(--color-primary)' : '#475569',
+                                            fontWeight: '600',
+                                            textAlign: 'center',
+                                            cursor: 'pointer',
+                                            userSelect: 'none',
+                                            transition: 'all 0.2s ease',
+                                            boxShadow: isSelected ? '0 4px 6px -1px rgba(34, 197, 94, 0.1)' : 'none'
+                                        }}
+                                    >
+                                        <div style={{ fontSize: '1.25rem', marginBottom: '4px' }}>{size}L</div>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: '400', color: isSelected ? '#166534' : '#94a3b8' }}>
+                                            {isSelected ? '✓ Selecionado' : 'Clique para marcar'}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
 
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Observações</label>

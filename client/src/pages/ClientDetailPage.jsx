@@ -5,30 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import api from '../api/axios';
 import CollectionModal from '../components/CollectionModal';
 
-const CONTAINER_SIZES = [200, 100, 60, 50, 30];
-
-const calculateContainers = (rawLiters) => {
-    const liters = parseFloat(rawLiters);
-    if (!liters || isNaN(liters) || liters <= 0) return null;
-    const containers = [];
-    let remaining = liters;
-    for (const size of CONTAINER_SIZES) {
-        const count = Math.floor(remaining / size);
-        if (count > 0) {
-            containers.push({ size, count });
-            remaining -= count * size;
-        }
-    }
-    if (remaining > 0) {
-        const smallest = [...CONTAINER_SIZES].reverse().find(s => s >= remaining) || CONTAINER_SIZES[CONTAINER_SIZES.length - 1];
-        const existing = containers.find(c => c.size === smallest);
-        if (existing) existing.count += 1;
-        else containers.push({ size: smallest, count: 1 });
-    }
-    const totalCapacity = containers.reduce((sum, c) => sum + c.size * c.count, 0);
-    const totalContainers = containers.reduce((sum, c) => sum + c.count, 0);
-    return { containers, totalCapacity, totalContainers };
-};
+// Removed calculated optimal containers, now using manual boolean fields
 
 const formatDocument = (val) => {
     if (!val) return '';
@@ -121,9 +98,7 @@ const ClientDetailPage = () => {
         return Object.values(months);
     }, [collections]);
 
-    const containerRecommendation = useMemo(() => {
-        return calculateContainers(client?.averageOilLiters);
-    }, [client?.averageOilLiters]);
+
 
     if (loading) return <div className="container" style={{ padding: '2rem' }}>Carregando...</div>;
     if (!client) return <div className="container" style={{ padding: '2rem' }}>Cliente não encontrado.</div>;
@@ -217,30 +192,19 @@ const ClientDetailPage = () => {
 
                         {client.observations && <p><strong>Obs:</strong> {client.observations}</p>}
 
-                        {client.averageOilLiters > 0 && (
+                        {(client.has25L || client.has50L || client.has100L || client.has200L) && (
                             <div style={{ marginTop: '0.75rem', padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: 'var(--border-radius)', border: '1px solid #bbf7d0' }}>
-                                <p style={{ fontSize: '0.9rem', color: '#15803d', marginBottom: '0.25rem' }}>Média Esperada: <strong>{client.averageOilLiters}L</strong></p>
-                                {containerRecommendation && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '600', color: '#166534', fontSize: '0.85rem' }}>
-                                            <Package size={14} /> Recipientes:
-                                        </div>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                                            {containerRecommendation.containers.map((c, i) => (
-                                                <span key={i} style={{
-                                                    backgroundColor: '#dcfce7', color: '#166534',
-                                                    padding: '0.2rem 0.6rem', borderRadius: '999px',
-                                                    fontSize: '0.8rem', fontWeight: '500'
-                                                }}>
-                                                    {c.count}x {c.size}L
-                                                </span>
-                                            ))}
-                                        </div>
-                                        <small style={{ color: '#15803d', fontSize: '0.75rem' }}>
-                                            Cap. total: {containerRecommendation.totalCapacity}L ({containerRecommendation.totalContainers} rec.)
-                                        </small>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '600', color: '#166534', fontSize: '0.9rem' }}>
+                                        <Package size={16} /> Recipientes Cadastrados:
                                     </div>
-                                )}
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                        {client.has200L && <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '0.3rem 0.8rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: '600' }}>✓ 200L</span>}
+                                        {client.has100L && <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '0.3rem 0.8rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: '600' }}>✓ 100L</span>}
+                                        {client.has50L && <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '0.3rem 0.8rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: '600' }}>✓ 50L</span>}
+                                        {client.has25L && <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '0.3rem 0.8rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: '600' }}>✓ 25L</span>}
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
