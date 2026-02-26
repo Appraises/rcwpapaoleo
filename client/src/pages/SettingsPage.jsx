@@ -3,6 +3,35 @@ import { Settings, DollarSign, MapPin, Building2, Save, CheckCircle, QrCode, Ref
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
+const formatCNPJ = (value) => {
+    let v = value.replace(/\D/g, '');
+    if (v.length > 14) v = v.substring(0, 14);
+    if (v.length <= 11) {
+        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+        v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    } else {
+        v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+        v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        v = v.replace(/(\d{4})(\d)/, '$1-$2');
+    }
+    return v;
+};
+
+const formatPhone = (value) => {
+    let v = value.replace(/\D/g, '');
+    if (v.length > 11) v = v.substring(0, 11);
+    if (v.length <= 10) {
+        v = v.replace(/(\d{2})(\d)/, '($1) $2');
+        v = v.replace(/(\d{4})(\d)/, '$1-$2');
+    } else {
+        v = v.replace(/(\d{2})(\d)/, '($1) $2');
+        v = v.replace(/(\d{5})(\d)/, '$1-$2');
+    }
+    return v;
+};
+
 const SettingsPage = () => {
     const { user } = useAuth();
 
@@ -29,8 +58,8 @@ const SettingsPage = () => {
 
     // Company info
     const [companyName, setCompanyName] = useState(() => localStorage.getItem('catoleo_company_name') || '');
-    const [companyCnpj, setCompanyCnpj] = useState(() => localStorage.getItem('catoleo_company_cnpj') || '');
-    const [companyPhone, setCompanyPhone] = useState(() => localStorage.getItem('catoleo_company_phone') || '');
+    const [companyCnpj, setCompanyCnpj] = useState(() => formatCNPJ(localStorage.getItem('catoleo_company_cnpj') || ''));
+    const [companyPhone, setCompanyPhone] = useState(() => formatPhone(localStorage.getItem('catoleo_company_phone') || ''));
     const [companySaved, setCompanySaved] = useState(false);
 
     // WhatsApp state
@@ -70,7 +99,7 @@ const SettingsPage = () => {
             if (s.dispatch_primary_collector_id) setPrimaryCollectorId(s.dispatch_primary_collector_id);
             if (s.dispatch_secondary_collector_id) setSecondaryCollectorId(s.dispatch_secondary_collector_id);
             if (s.dispatch_split_threshold) setSplitThreshold(s.dispatch_split_threshold);
-            if (s.dispatch_owner_phone) setOwnerPhone(s.dispatch_owner_phone);
+            if (s.dispatch_owner_phone) setOwnerPhone(formatPhone(s.dispatch_owner_phone));
         } catch (error) {
             console.error('Error fetching settings:', error);
         }
@@ -558,7 +587,7 @@ const SettingsPage = () => {
                             <input
                                 type="text"
                                 value={companyCnpj}
-                                onChange={(e) => setCompanyCnpj(e.target.value)}
+                                onChange={(e) => setCompanyCnpj(formatCNPJ(e.target.value))}
                                 placeholder="00.000.000/0001-00"
                                 style={inputStyle}
                             />
@@ -568,7 +597,7 @@ const SettingsPage = () => {
                             <input
                                 type="text"
                                 value={companyPhone}
-                                onChange={(e) => setCompanyPhone(e.target.value)}
+                                onChange={(e) => setCompanyPhone(formatPhone(e.target.value))}
                                 placeholder="(79) 99999-9999"
                                 style={inputStyle}
                             />
