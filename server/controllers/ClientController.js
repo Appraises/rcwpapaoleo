@@ -164,8 +164,8 @@ exports.updateClient = async (req, res) => {
         const { name, tradeName, document, phone, additionalPhones, address, street, number, district, city, state, zip, reference, pricePerLiter, averageOilLiters, latitude, longitude, observations, has25L, has50L, has100L, has200L } = req.body;
 
         // Server-side geocoding if coordinates not provided OR if address data changed
-        let finalLat = latitude;
-        let finalLng = longitude;
+        let finalLat = latitude || client.Address?.latitude || client.latitude;
+        let finalLng = longitude || client.Address?.longitude || client.longitude;
 
         const addressChanged =
             street !== client.Address?.street ||
