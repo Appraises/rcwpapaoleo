@@ -315,8 +315,8 @@ const ClientFormPage = () => {
                 phone: formData.phone.replace(/\D/g, ''),
                 additionalPhones: formData.additionalPhones.filter(p => p).map(p => p.replace(/\D/g, '')),
                 zip: formData.zip.replace(/\D/g, ''),
-                pricePerLiter: formData.pricePerLiter ? parseFloat(formData.pricePerLiter) : 0,
-                averageOilLiters: formData.averageOilLiters ? parseFloat(formData.averageOilLiters) : 0
+                pricePerLiter: formData.pricePerLiter ? parseFloat(String(formData.pricePerLiter).replace(',', '.')) : 0,
+                averageOilLiters: formData.averageOilLiters ? parseFloat(String(formData.averageOilLiters).replace(',', '.')) : 0
             };
 
             if (id) {
@@ -567,12 +567,12 @@ const ClientFormPage = () => {
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Preço de Compra (R$/L)</label>
                             <input
-                                type="number"
-                                step="0.01"
+                                type="text"
+                                inputMode="decimal"
                                 name="pricePerLiter"
                                 value={formData.pricePerLiter || ''}
                                 onChange={handleChange}
-                                placeholder="0.00"
+                                placeholder="Ex: 2,70"
                                 style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
                             />
                             <small style={{ color: '#666' }}>Valor pago a este cliente por litro de óleo.</small>
@@ -580,12 +580,12 @@ const ClientFormPage = () => {
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Média de Óleo Esperada (L)</label>
                             <input
-                                type="number"
-                                step="1"
+                                type="text"
+                                inputMode="decimal"
                                 name="averageOilLiters"
                                 value={formData.averageOilLiters || ''}
                                 onChange={handleChange}
-                                placeholder="0"
+                                placeholder="Ex: 50"
                                 style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
                             />
                             <small style={{ color: '#666' }}>Quantidade média de litros de óleo por coleta.</small>

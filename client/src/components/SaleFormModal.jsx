@@ -39,8 +39,8 @@ const SaleFormModal = ({ show, handleClose, handleSave, initialData }) => {
     }, [initialData, show, todayStr]);
 
     useEffect(() => {
-        const qty = parseFloat(formData.quantityLiters);
-        const price = parseFloat(formData.pricePerLiter);
+        const qty = parseFloat(String(formData.quantityLiters).replace(',', '.'));
+        const price = parseFloat(String(formData.pricePerLiter).replace(',', '.'));
         if (!isNaN(qty) && !isNaN(price)) {
             setFormData(prev => ({
                 ...prev,
@@ -64,9 +64,9 @@ const SaleFormModal = ({ show, handleClose, handleSave, initialData }) => {
 
         const payload = {
             ...formData,
-            quantityLiters: parseFloat(formData.quantityLiters),
-            pricePerLiter: formData.pricePerLiter ? parseFloat(formData.pricePerLiter) : null,
-            totalValue: formData.totalValue ? parseFloat(formData.totalValue) : null
+            quantityLiters: parseFloat(String(formData.quantityLiters).replace(',', '.')),
+            pricePerLiter: formData.pricePerLiter ? parseFloat(String(formData.pricePerLiter).replace(',', '.')) : null,
+            totalValue: formData.totalValue ? parseFloat(String(formData.totalValue).replace(',', '.')) : null
         };
 
         handleSave(payload);
@@ -104,7 +104,7 @@ const SaleFormModal = ({ show, handleClose, handleSave, initialData }) => {
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Quantidade (Litros) *</label>
                             <div style={{ display: 'flex', border: '1px solid #ddd', borderRadius: 'var(--border-radius)', overflow: 'hidden' }}>
-                                <input required type="number" step="0.01" name="quantityLiters" value={formData.quantityLiters} onChange={handleChange}
+                                <input required type="text" inputMode="decimal" name="quantityLiters" value={formData.quantityLiters} onChange={handleChange}
                                     style={{ flex: 1, padding: '0.75rem', border: 'none', outline: 'none' }} />
                                 <span style={{ padding: '0.75rem 1rem', backgroundColor: '#f8f9fa', borderLeft: '1px solid #ddd', color: 'var(--color-text-light)' }}>L</span>
                             </div>
@@ -115,7 +115,7 @@ const SaleFormModal = ({ show, handleClose, handleSave, initialData }) => {
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Preço por Litro</label>
                                 <div style={{ display: 'flex', border: '1px solid #ddd', borderRadius: 'var(--border-radius)', overflow: 'hidden' }}>
                                     <span style={{ padding: '0.75rem', backgroundColor: '#f8f9fa', borderRight: '1px solid #ddd', color: 'var(--color-text-light)' }}>R$</span>
-                                    <input type="number" step="0.01" name="pricePerLiter" value={formData.pricePerLiter} onChange={handleChange}
+                                    <input type="text" inputMode="decimal" name="pricePerLiter" value={formData.pricePerLiter} onChange={handleChange}
                                         style={{ flex: 1, padding: '0.75rem', border: 'none', outline: 'none', width: '100%' }} />
                                 </div>
                             </div>
@@ -123,7 +123,7 @@ const SaleFormModal = ({ show, handleClose, handleSave, initialData }) => {
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Valor Total</label>
                                 <div style={{ display: 'flex', border: '1px solid #ddd', borderRadius: 'var(--border-radius)', overflow: 'hidden' }}>
                                     <span style={{ padding: '0.75rem', backgroundColor: '#f8f9fa', borderRight: '1px solid #ddd', color: 'var(--color-text-light)' }}>R$</span>
-                                    <input type="number" step="0.01" name="totalValue" value={formData.totalValue} onChange={handleChange}
+                                    <input type="text" inputMode="decimal" name="totalValue" value={formData.totalValue} onChange={handleChange}
                                         style={{ flex: 1, padding: '0.75rem', border: 'none', outline: 'none', width: '100%' }} />
                                 </div>
                             </div>
