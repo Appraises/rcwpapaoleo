@@ -2,13 +2,20 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { Link } from 'react-router-dom';
 import BuyerFormModal from '../components/BuyerFormModal';
-import { Plus, Eye, Edit, Trash2 } from 'lucide-react';
+import SaleFormModal from '../components/SaleFormModal';
+import { Plus, Eye, Edit, Trash2, DollarSign } from 'lucide-react';
 
 const BuyersPage = () => {
     const [buyers, setBuyers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
+
+    // Modal states for Buyer
+    const [showBuyerModal, setShowBuyerModal] = useState(false);
     const [currentBuyer, setCurrentBuyer] = useState(null);
+
+    // Modal states for Sale
+    const [showSaleModal, setShowSaleModal] = useState(false);
+    const [buyerForSale, setBuyerForSale] = useState(null);
 
     const fetchBuyers = async () => {
         setLoading(true);
@@ -17,7 +24,7 @@ const BuyersPage = () => {
             setBuyers(response.data);
         } catch (error) {
             console.error('Error fetching buyers:', error);
-            alert('Failed to load buyers.');
+            alert('Falha ao carregar compradores.');
         } finally {
             setLoading(false);
         }
@@ -27,13 +34,14 @@ const BuyersPage = () => {
         fetchBuyers();
     }, []);
 
-    const handleShowModal = (buyer = null) => {
+    // Handlers for Buyer Form
+    const handleShowBuyerModal = (buyer = null) => {
         setCurrentBuyer(buyer);
-        setShowModal(true);
+        setShowBuyerModal(true);
     };
 
-    const handleCloseModal = () => {
-        setShowModal(false);
+    const handleCloseBuyerModal = () => {
+        setShowBuyerModal(false);
         setCurrentBuyer(null);
     };
 
@@ -45,22 +53,45 @@ const BuyersPage = () => {
                 await api.post(`/buyers`, buyerData);
             }
             fetchBuyers();
-            handleCloseModal();
+            handleCloseBuyerModal();
         } catch (error) {
             console.error('Error saving buyer:', error);
-            alert('Failed to save buyer.');
+            alert('Falha ao salvar comprador.');
         }
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this buyer? All sales records attached to it will also be deleted.')) {
+    const handleDeleteBuyer = async (id) => {
+        if (window.confirm('Tem certeza que deseja apagar este comprador? Todas as vendas atreladas a ele também serão excluídas.')) {
             try {
                 await api.delete(`/buyers/${id}`);
                 fetchBuyers();
             } catch (error) {
                 console.error('Error deleting buyer:', error);
-                alert('Failed to delete buyer.');
+                alert('Falha ao apagar comprador.');
             }
+        }
+    };
+
+    // Handlers for Sale Form
+    const handleShowSaleModal = (buyer) => {
+        setBuyerForSale(buyer);
+        setShowSaleModal(true);
+    };
+
+    const handleCloseSaleModal = () => {
+        setShowSaleModal(false);
+        setBuyerForSale(null);
+    };
+
+    const handleSaveSale = async (saleData) => {
+        try {
+            await api.post(`/sales`, { ...saleData, buyerId: buyerForSale.id });
+            handleCloseSaleModal();
+            alert('Venda registrada com sucesso!');
+            // Opicionalmente navegar para a página do comprador ou recarregar os dados se eles mudarem
+        } catch (error) {
+            console.error('Error saving sale:', error);
+            alert('Falha ao salvar venda.');
         }
     };
 
@@ -75,7 +106,7 @@ const BuyersPage = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h2>Compradores (Vendas)</h2>
                 <button
-                    onClick={() => handleShowModal()}
+                    onClick={() => handleShowBuyerModal()}
                     style={{
                         backgroundColor: 'var(--color-primary)',
                         color: 'white',
@@ -97,68 +128,128 @@ const BuyersPage = () => {
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
                     <div style={{ width: '40px', height: '40px', border: '3px solid #f3f3f3', borderTop: '3px solid var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                 </div>
-            ) : (
-                <div style={{ backgroundColor: 'white', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
-                    <div className="table-responsive" style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead style={{ backgroundColor: 'var(--color-background)', borderBottom: '2px solid #eee' }}>
-                                <tr>
-                                    <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-light)' }}>Nome</th>
-                                    <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-light)' }}>Tipo</th>
-                                    <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-light)' }}>Telefone</th>
-                                    <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-light)', textAlign: 'center' }}>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {buyers.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-light)' }}>Ainda não há compradores cadastrados.</td>
-                                    </tr>
-                                ) : (
-                                    buyers.map((buyer) => (
-                                        <tr key={buyer.id} style={{ borderBottom: '1px solid #eee', transition: 'background-color 0.2s' }}>
-                                            <td style={{ padding: '1rem', fontWeight: '500' }}>{buyer.name}</td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <span style={{
-                                                    backgroundColor: getTypeColor(buyer.type),
-                                                    color: 'white',
-                                                    padding: '0.25rem 0.75rem',
-                                                    borderRadius: '1rem',
-                                                    fontSize: '0.875rem',
-                                                    fontWeight: '600'
-                                                }}>
-                                                    {buyer.type || 'Outro'}
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '1rem', color: 'var(--color-text-light)' }}>{buyer.phone || '-'}</td>
-                                            <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                                                <Link to={`/vendas/${buyer.id}`} style={{ padding: '0.5rem', borderRadius: '4px', backgroundColor: '#e0f2fe', color: '#0369a1', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>
-                                                    <Eye size={18} />
-                                                </Link>
-                                                <button onClick={() => handleShowModal(buyer)} style={{ padding: '0.5rem', borderRadius: '4px', backgroundColor: '#fef3c7', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>
-                                                    <Edit size={18} />
-                                                </button>
-                                                <button onClick={() => handleDelete(buyer.id)} style={{ padding: '0.5rem', borderRadius: '4px', backgroundColor: '#fee2e2', color: '#b91c1c', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+            ) : buyers.length === 0 ? (
+                <div style={{
+                    textAlign: 'center', padding: '3rem', color: 'var(--color-text-light)',
+                    backgroundColor: 'white', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-sm)'
+                }}>
+                    <p style={{ fontSize: '1.1rem' }}>Nenhum comprador cadastrado ainda.</p>
                 </div>
+            ) : (
+                <>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: '1rem' }}>
+                        {buyers.length} comprador{buyers.length !== 1 ? 'es' : ''}
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                        {buyers.map(buyer => (
+                            <div key={buyer.id} style={{
+                                backgroundColor: 'white',
+                                padding: '1.5rem',
+                                borderRadius: 'var(--border-radius)',
+                                boxShadow: 'var(--shadow-sm)',
+                                borderLeft: '4px solid var(--color-primary)',
+                                display: 'flex',
+                                flexDirection: 'column'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                                    <h3 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 600, color: 'var(--color-primary)' }}>{buyer.name}</h3>
+                                </div>
+
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <span style={{
+                                        backgroundColor: getTypeColor(buyer.type),
+                                        color: 'white',
+                                        padding: '0.2rem 0.6rem',
+                                        borderRadius: '1rem',
+                                        fontSize: '0.75rem',
+                                        fontWeight: '600'
+                                    }}>
+                                        {buyer.type || 'Outro'}
+                                    </span>
+                                </div>
+
+                                {buyer.document && <p style={{ color: 'var(--color-text-light)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Doc: {buyer.document}</p>}
+                                {buyer.phone && <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}><strong>Tel:</strong> {buyer.phone}</p>}
+                                {buyer.address && <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{buyer.address}</p>}
+
+                                <div style={{ marginTop: 'auto', paddingTop: '1rem' }}>
+                                    {/* Primary Action Button (Add Sale) */}
+                                    <button
+                                        onClick={() => handleShowSaleModal(buyer)}
+                                        style={{
+                                            width: '100%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem',
+                                            padding: '0.6rem',
+                                            borderRadius: 'var(--border-radius)',
+                                            backgroundColor: '#10b981', // green for sales
+                                            color: 'white',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            fontWeight: 600,
+                                            marginBottom: '0.75rem'
+                                        }}
+                                    >
+                                        <DollarSign size={18} /> Registrar Venda
+                                    </button>
+
+                                    {/* Secondary Action Buttons */}
+                                    <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid #eee', paddingTop: '0.75rem' }}>
+                                        <Link to={`/vendas/${buyer.id}`} style={{
+                                            flex: 1,
+                                            textAlign: 'center',
+                                            padding: '0.4rem',
+                                            borderRadius: 'var(--border-radius)',
+                                            border: '1px solid var(--color-primary)',
+                                            color: 'var(--color-primary)',
+                                            fontSize: '0.9rem'
+                                        }}>
+                                            Detalhes
+                                        </Link>
+                                        <button onClick={() => handleShowBuyerModal(buyer)} style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            padding: '0.4rem 0.7rem', borderRadius: 'var(--border-radius)',
+                                            backgroundColor: '#f0f0f0', color: 'var(--color-text)', border: 'none', cursor: 'pointer'
+                                        }}>
+                                            <Edit size={16} />
+                                        </button>
+                                        <button onClick={() => handleDeleteBuyer(buyer.id)} style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            padding: '0.4rem 0.7rem', borderRadius: 'var(--border-radius)',
+                                            backgroundColor: '#fee2e2', color: '#b91c1c', border: 'none', cursor: 'pointer'
+                                        }}>
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
             )}
 
-            {showModal && (
+            {/* Buyer Modal */}
+            {showBuyerModal && (
                 <BuyerFormModal
-                    show={showModal}
-                    handleClose={handleCloseModal}
+                    show={showBuyerModal}
+                    handleClose={handleCloseBuyerModal}
                     handleSave={handleSaveBuyer}
                     initialData={currentBuyer}
                 />
             )}
+
+            {/* Sale Modal */}
+            {showSaleModal && (
+                <SaleFormModal
+                    show={showSaleModal}
+                    handleClose={handleCloseSaleModal}
+                    handleSave={handleSaveSale}
+                    initialData={null}
+                />
+            )}
+
             <style>{`
                 @keyframes spin {
                     0% { transform: rotate(0deg); }
