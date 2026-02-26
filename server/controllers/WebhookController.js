@@ -51,7 +51,23 @@ exports.handleEvolutionWebhook = async (req, res) => {
                 continue;
             }
 
-            const remoteJid = msg.key.remoteJid;
+            let remoteJid = msg.key.remoteJid;
+
+            // Workaround for Meta's @lid privacy identifier
+            // If the message is masked as a @lid, Evolution API v2+ often includes the real ID in req.body.sender
+            if (remoteJid && remoteJid.includes('@lid')) {
+                const realSender = req.body.sender || msg.sender;
+                const senderPn = msg.key?.senderPn;
+
+                if (realSender && realSender.includes('@s.whatsapp.net')) {
+                    console.log(`[Webhook] 👁️ @lid masked number detected! Swapping ${remoteJid} for real sender ${realSender}`);
+                    remoteJid = realSender;
+                } else if (senderPn) {
+                    console.log(`[Webhook] 👁️ @lid masked number detected! Swapping ${remoteJid} for senderPn ${senderPn}`);
+                    remoteJid = `${senderPn}@s.whatsapp.net`;
+                }
+            }
+
             console.log(`[Webhook] remoteJid: ${remoteJid}`);
 
             if (!remoteJid || (!remoteJid.includes('@s.whatsapp.net') && !remoteJid.includes('@lid'))) {
