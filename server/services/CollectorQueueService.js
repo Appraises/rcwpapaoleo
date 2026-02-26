@@ -8,14 +8,42 @@ class CollectorQueueService {
     constructor() {
         this.queue = [];
         this.isProcessing = false;
+        this.buffers = new Map();
     }
 
     /**
-     * Add a collector webhook event to the queue.
+     * Add a collector webhook event to the buffer.
      */
     add(collectorId, messageText, remoteJid, messageId) {
-        this.queue.push({ collectorId, messageText, remoteJid, messageId });
-        console.log(`[CollectorQueue] 📥 Task added for collector ${collectorId}. Queue size: ${this.queue.length}`);
+        const BUFF_TIME_MS = 2 * 60 * 1000; // 2 minutes
+
+        if (this.buffers.has(collectorId)) {
+            const buffer = this.buffers.get(collectorId);
+            clearTimeout(buffer.timer);
+            buffer.text += '\n' + messageText;
+            buffer.remoteJid = remoteJid;
+            buffer.messageId = messageId;  // keep latest messageId
+            buffer.timer = setTimeout(() => this.flushBuffer(collectorId), BUFF_TIME_MS);
+            console.log(`[CollectorQueue] 📥 Appended message from collector ${collectorId}. Timer reset to ${BUFF_TIME_MS / 1000}s.`);
+        } else {
+            const timer = setTimeout(() => this.flushBuffer(collectorId), BUFF_TIME_MS);
+            this.buffers.set(collectorId, { text: messageText, timer, remoteJid, messageId });
+            console.log(`[CollectorQueue] 📥 Started ${BUFF_TIME_MS / 1000}s buffer for collector ${collectorId}.`);
+        }
+    }
+
+    flushBuffer(collectorId) {
+        const buffer = this.buffers.get(collectorId);
+        if (!buffer) return;
+
+        this.buffers.delete(collectorId);
+        this.queue.push({
+            collectorId,
+            messageText: buffer.text,
+            remoteJid: buffer.remoteJid,
+            messageId: buffer.messageId
+        });
+        console.log(`[CollectorQueue] ⏱️ Timer reached! Flushed buffer for collector ${collectorId}. Queue size: ${this.queue.length}`);
 
         if (!this.isProcessing) {
             this.processNext();
