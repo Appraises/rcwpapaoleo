@@ -26,7 +26,10 @@ CollectionRequest.belongsTo(Client, { foreignKey: 'clientId' });
 
 const syncDatabase = async () => {
     try {
+        // Disable foreign keys temporarily for SQLite 'alter: true' compatibility
+        await sequelize.query('PRAGMA foreign_keys = OFF;');
         await sequelize.sync({ alter: true });
+        await sequelize.query('PRAGMA foreign_keys = ON;');
         console.log('✅ Database synced successfully');
     } catch (error) {
         console.error('❌ Error syncing database:', error.message);
