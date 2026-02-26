@@ -164,8 +164,9 @@ function buildLocationName(req) {
     const district = addr?.district || client.district || '';
     const addressStr = [street, number].filter(Boolean).join(', ');
     const districtStr = district ? ` — ${district}` : '';
+    const mediaStr = client.averageOilLiters ? ` [Média: ${client.averageOilLiters}L]` : '';
 
-    return `${client.name} (${addressStr}${districtStr})`;
+    return `${client.name} (${addressStr}${districtStr})${mediaStr}`;
 }
 
 /**
