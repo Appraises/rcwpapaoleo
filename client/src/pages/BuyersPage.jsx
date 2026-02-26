@@ -172,31 +172,9 @@ const BuyersPage = () => {
                                 {buyer.phone && <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}><strong>Tel:</strong> {buyer.phone}</p>}
                                 {buyer.address && <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{buyer.address}</p>}
 
-                                <div style={{ marginTop: 'auto', paddingTop: '1rem' }}>
-                                    {/* Primary Action Button (Add Sale) */}
-                                    <button
-                                        onClick={() => handleShowSaleModal(buyer)}
-                                        style={{
-                                            width: '100%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '0.5rem',
-                                            padding: '0.6rem',
-                                            borderRadius: 'var(--border-radius)',
-                                            backgroundColor: '#10b981', // green for sales
-                                            color: 'white',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            fontWeight: 600,
-                                            marginBottom: '0.75rem'
-                                        }}
-                                    >
-                                        <DollarSign size={18} /> Registrar Venda
-                                    </button>
-
+                                <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid #eee', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                     {/* Secondary Action Buttons */}
-                                    <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid #eee', paddingTop: '0.75rem' }}>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
                                         <Link to={`/vendas/${buyer.id}`} style={{
                                             flex: 1,
                                             textAlign: 'center',
@@ -223,6 +201,27 @@ const BuyersPage = () => {
                                             <Trash2 size={16} />
                                         </button>
                                     </div>
+
+                                    {/* Primary Action Button (Add Sale) */}
+                                    <button
+                                        onClick={() => handleShowSaleModal(buyer)}
+                                        style={{
+                                            width: '100%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem',
+                                            padding: '0.6rem',
+                                            borderRadius: 'var(--border-radius)',
+                                            backgroundColor: '#10b981', // green for sales
+                                            color: 'white',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            fontWeight: 600
+                                        }}
+                                    >
+                                        <DollarSign size={18} /> Registrar Venda
+                                    </button>
                                 </div>
                             </div>
                         ))}
