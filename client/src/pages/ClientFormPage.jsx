@@ -315,8 +315,8 @@ const ClientFormPage = () => {
                 phone: formData.phone.replace(/\D/g, ''),
                 additionalPhones: formData.additionalPhones.filter(p => p).map(p => p.replace(/\D/g, '')),
                 zip: formData.zip.replace(/\D/g, ''),
-                pricePerLiter: formData.pricePerLiter ? parseFloat(formData.pricePerLiter.toString().replace(/\./g, '').replace(',', '.')) : 0,
-                averageOilLiters: formData.averageOilLiters ? parseFloat(formData.averageOilLiters.toString().replace(/\./g, '').replace(',', '.')) : 0
+                pricePerLiter: formData.pricePerLiter ? parseFloat(formData.pricePerLiter) : 0,
+                averageOilLiters: formData.averageOilLiters ? parseFloat(formData.averageOilLiters) : 0
             };
 
             if (id) {
