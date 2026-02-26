@@ -155,16 +155,14 @@ exports.handleEvolutionWebhook = async (req, res) => {
             } else {
                 console.log(`[Webhook] ❌ No matching client or collector found for number: ${rawNumber}`);
 
-                // Se for um @lid (número oculto via Global Search/Ads) e não tivermos no DB, avisamos o usuário
-                if (remoteJid.includes('@lid')) {
-                    const fallbackMessage = `Olá! Recebemos sua mensagem, mas como você nos contatou através de um link/busca do WhatsApp, seu número de telefone está Oculto para nós (Regra de Privacidade da Meta).\n\nPara que possamos identificar seu cadastro e solicitar sua coleta, por favor, responda esta mensagem digitando o seu *Número de Telefone com DDD* utilizado no cadastro.`;
+                // Envia uma mensagem amigável para qualquer número não cadastrado
+                const fallbackMessage = `Olá! ♻️ Bem-vindo(a) à *CatÓleo*!\n\nRecebemos sua mensagem, mas este número de telefone ainda não foi localizado em nosso sistema de coletas.\n\nSe você já é nosso parceiro, verifique se está falando do mesmo número cadastrado. Caso contrário, aguarde um momento e nossa equipe de atendimento falará com você! 🌱`;
 
-                    try {
-                        console.log(`[Webhook] ℹ️ Sending @lid privacy fallback message to ${remoteJid}`);
-                        await EvolutionService.sendTextMessage(remoteJid, fallbackMessage);
-                    } catch (replyErr) {
-                        console.error(`[Webhook] ❌ Failed to send @lid fallback message:`, replyErr.message);
-                    }
+                try {
+                    console.log(`[Webhook] ℹ️ Sending unregistered fallback message to ${remoteJid}`);
+                    await EvolutionService.sendTextMessage(remoteJid, fallbackMessage);
+                } catch (replyErr) {
+                    console.error(`[Webhook] ❌ Failed to send unregistered fallback message:`, replyErr.message);
                 }
             }
         }
