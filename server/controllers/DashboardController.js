@@ -5,7 +5,8 @@ const { exec } = require('child_process');
 exports.getDashboardStats = async (req, res) => {
     try {
         const today = new Date();
-        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        // Construct YYYY-MM-DD string to ensure SQLite DATEONLY string-match works perfectly
+        const firstDayOfMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
 
         // Total collected this month
         const totalMonth = await Collection.sum('quantity', {
@@ -38,9 +39,9 @@ exports.getDashboardStats = async (req, res) => {
         // Monthly history (Last 6 months)
         // This is bit tricky with SQLite and GroupBy month. 
         // Simplified approach: Get all collections from last 6 months and aggregate in JS to avoid DB dialect issues
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-        sixMonthsAgo.setDate(1);
+        const sixMonthsAgoDate = new Date();
+        sixMonthsAgoDate.setMonth(sixMonthsAgoDate.getMonth() - 5);
+        const sixMonthsAgo = `${sixMonthsAgoDate.getFullYear()}-${String(sixMonthsAgoDate.getMonth() + 1).padStart(2, '0')}-01`;
 
         const historyData = await Collection.findAll({
             where: {

@@ -62,6 +62,11 @@ const SettingsPage = () => {
     const [companyPhone, setCompanyPhone] = useState(() => formatPhone(localStorage.getItem('catoleo_company_phone') || ''));
     const [companySaved, setCompanySaved] = useState(false);
 
+    // Logs state
+    const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
+    const [systemLogs, setSystemLogs] = useState('');
+    const [loadingLogs, setLoadingLogs] = useState(false);
+
     // WhatsApp state
     const [waStatus, setWaStatus] = useState(null);
     const [qrCode, setQrCode] = useState(null);
@@ -137,6 +142,19 @@ const SettingsPage = () => {
             alert(msg);
         } finally {
             setLoadingWa(false);
+        }
+    };
+
+    const fetchLogs = async () => {
+        setLoadingLogs(true);
+        try {
+            const res = await api.get('/dashboard/logs');
+            setSystemLogs(res.data.logs);
+        } catch (error) {
+            console.error('Error fetching logs:', error);
+            setSystemLogs('Erro ao carregar os logs do servidor.');
+        } finally {
+            setLoadingLogs(false);
         }
     };
 
@@ -608,6 +626,64 @@ const SettingsPage = () => {
                     </button>
                 </form>
             </div>
+            {/* System Actions */}
+            {user?.role === 'admin' && (
+                <div style={cardStyle}>
+                    <div style={{ ...cardHeaderStyle, marginBottom: 0, paddingBottom: 0, borderBottom: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <div style={iconBadgeStyle('#f3f4f6')}>
+                                <Settings size={20} color="#4b5563" />
+                            </div>
+                            <h3 style={cardTitleStyle}>Sistema e Servidor</h3>
+                        </div>
+                        <button onClick={() => { setIsLogsModalOpen(true); fetchLogs(); }} style={{
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)',
+                            backgroundColor: '#1f2937', color: 'white', border: '1px solid #1f2937', cursor: 'pointer', fontSize: '0.85rem'
+                        }}>
+                            <Settings size={14} /> Ver Logs do Sistema
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Logs Modal */}
+            {isLogsModalOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 1000, padding: '1rem'
+                }}>
+                    <div style={{
+                        backgroundColor: 'white', borderRadius: 'var(--border-radius)',
+                        width: '100%', maxWidth: '800px', height: '80vh', display: 'flex', flexDirection: 'column',
+                        padding: '1.5rem', boxShadow: 'var(--shadow-md)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ margin: 0 }}>Logs do Servidor (PM2)</h3>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button onClick={fetchLogs} disabled={loadingLogs} style={{
+                                    padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)',
+                                    background: 'var(--color-primary)', color: 'white', fontSize: '0.9rem'
+                                }}>{loadingLogs ? 'Atualizando...' : 'Atualizar'}</button>
+                                <button onClick={() => setIsLogsModalOpen(false)} style={{
+                                    padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)',
+                                    background: '#f5f5f5', color: 'var(--color-text)', fontSize: '0.9rem'
+                                }}>Fechar</button>
+                            </div>
+                        </div>
+
+                        <div style={{
+                            flex: 1, backgroundColor: '#1e1e1e', color: '#00ff00',
+                            padding: '1rem', borderRadius: 'var(--border-radius)',
+                            fontFamily: 'monospace', fontSize: '0.85rem',
+                            overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all'
+                        }}>
+                            {loadingLogs ? 'Carregando logs...' : (systemLogs || 'Nenhum log encontrado. O sistema pm2 pode não estar rodando neste formato.')}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
