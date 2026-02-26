@@ -22,6 +22,17 @@ Exemplos de SIM (mesmo com erros ou sem citar óleo):
 "venha esvaziar o tambor" -> SIM
 "preciso de coleta" -> SIM
 "pode vim pegar" -> SIM
+"recipiente cheio" -> SIM
+"vaso cheio" -> SIM
+"ta cheio" -> SIM
+"venha pegar" -> SIM
+"tem oleo" -> SIM
+"programe pra recolher" -> SIM
+"vem quando" -> SIM
+"pode vir" -> SIM
+"vaso tá cheio" -> SIM
+"nao tem onde colocar" -> SIM
+"traga um vaso" -> SIM
 
 Exemplos de NAO:
 "bom dia" -> NAO
