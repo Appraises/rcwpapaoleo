@@ -63,7 +63,7 @@ class EvolutionService {
             console.log(`[EvolutionService] 👁️ Marking message ${messageId} as read...`);
 
             const response = await fetch(`${creds.apiUrl}/chat/markMessageAsRead/${creds.instanceName}`, {
-                method: 'PUT',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'apikey': creds.apiKey },
                 body: JSON.stringify({
                     readMessages: [{
@@ -122,7 +122,8 @@ class EvolutionService {
                 headers: { 'Content-Type': 'application/json', 'apikey': creds.apiKey },
                 body: JSON.stringify({
                     number: remoteJid,
-                    presence: presence  // "composing" | "paused" | "available" | "unavailable"
+                    presence: presence,  // "composing" | "paused" | "available" | "unavailable"
+                    delay: 1200
                 })
             });
 
@@ -210,7 +211,13 @@ class EvolutionService {
 
             const body = {
                 number: formattedPhone,
-                text: message
+                text: message,
+                options: {
+                    delay: 1200,
+                    presence: 'composing',
+                    linkPreview: false,
+                    checkNumber: false // attempt to bypass 'exists' validation for @lid numbers
+                }
             };
 
             console.log(`[EvolutionService] 📤 Sending reply to ${formattedPhone}...`);

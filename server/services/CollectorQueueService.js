@@ -15,7 +15,7 @@ class CollectorQueueService {
      * Add a collector webhook event to the buffer.
      */
     add(collectorId, messageText, remoteJid, messageId) {
-        const BUFF_TIME_MS = 2 * 60 * 1000; // 2 minutes
+        const BUFF_TIME_MS = 1 * 60 * 1000; // 1 minutes
 
         if (this.buffers.has(collectorId)) {
             const buffer = this.buffers.get(collectorId);
