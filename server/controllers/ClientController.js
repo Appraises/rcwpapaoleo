@@ -163,16 +163,22 @@ exports.updateClient = async (req, res) => {
 
         const { name, tradeName, document, phone, additionalPhones, address, street, number, district, city, state, zip, reference, pricePerLiter, averageOilLiters, latitude, longitude, observations, has25L, has50L, has100L, has200L } = req.body;
 
+        // Resilient Address Lookup (in case the 'include' above failed)
+        let clientAddress = client.Address;
+        if (!clientAddress) {
+            clientAddress = await Address.findOne({ where: { clientId: client.id } });
+        }
+
         // Server-side geocoding if coordinates not provided OR if address data changed
-        let finalLat = latitude || client.Address?.latitude || client.latitude;
-        let finalLng = longitude || client.Address?.longitude || client.longitude;
+        let finalLat = latitude || clientAddress?.latitude || client.latitude;
+        let finalLng = longitude || clientAddress?.longitude || client.longitude;
 
         const addressChanged =
-            street !== client.Address?.street ||
-            number !== client.Address?.number ||
-            district !== client.Address?.district ||
-            city !== client.Address?.city ||
-            zip !== client.Address?.zip;
+            street !== clientAddress?.street ||
+            number !== clientAddress?.number ||
+            district !== clientAddress?.district ||
+            city !== clientAddress?.city ||
+            zip !== clientAddress?.zip;
 
         if (!finalLat || !finalLng || addressChanged) {
             const coords = await GeocodingService.geocode({ street, number, district, city, state, zip });
@@ -187,10 +193,11 @@ exports.updateClient = async (req, res) => {
 
         await client.update({ name, tradeName, document, phone, address: fullAddress, pricePerLiter, averageOilLiters, observations, has25L, has50L, has100L, has200L });
 
-        // Update or create Address using raw SQL as fallback
+        // Update or create Address safely (to prevent duplicate rows if include failed)
         try {
-            if (client.Address) {
-                await client.Address.update({
+            const existingAddress = await Address.findOne({ where: { clientId: client.id } });
+            if (existingAddress) {
+                await existingAddress.update({
                     street, number, district, city, state, zip, reference,
                     latitude: finalLat, longitude: finalLng
                 });
