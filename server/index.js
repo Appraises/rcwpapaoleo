@@ -20,6 +20,8 @@ const webhookRoutes = require('./routes/webhookRoutes');
 const evolutionRoutes = require('./routes/evolutionRoutes');
 const dispatchRoutes = require('./routes/dispatchRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
+const buyerRoutes = require('./routes/buyerRoutes');
+const saleRoutes = require('./routes/saleRoutes');
 // const authMiddleware = require('./middlewares/authMiddleware'); // Uncomment to protect routes globally or use in specific routes
 
 const seedUser = require('./seed');
@@ -44,6 +46,8 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api/evolution', evolutionRoutes);
 app.use('/api/dispatch', dispatchRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/buyers', buyerRoutes);
+app.use('/api/sales', saleRoutes);
 app.use('/api/public/reports', express.static(path.join(__dirname, 'public/reports')));
 
 app.get('/', (req, res) => {

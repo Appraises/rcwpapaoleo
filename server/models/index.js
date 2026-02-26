@@ -7,6 +7,8 @@ const Address = require('./Address');
 const Report = require('./Report');
 const CollectionRequest = require('./CollectionRequest');
 const ClientPhone = require('./ClientPhone');
+const Buyer = require('./Buyer');
+const Sale = require('./Sale');
 
 // Associations
 Client.hasOne(Address, { foreignKey: 'clientId', onDelete: 'CASCADE' });
@@ -23,6 +25,10 @@ Collection.belongsTo(User, { foreignKey: 'userId' });
 
 Client.hasMany(CollectionRequest, { foreignKey: 'clientId', onDelete: 'CASCADE' });
 CollectionRequest.belongsTo(Client, { foreignKey: 'clientId' });
+
+// Sales Associations
+Buyer.hasMany(Sale, { foreignKey: 'buyerId', onDelete: 'CASCADE' });
+Sale.belongsTo(Buyer, { foreignKey: 'buyerId' });
 
 const syncDatabase = async () => {
     try {
@@ -46,5 +52,7 @@ module.exports = {
     Report,
     CollectionRequest,
     ClientPhone,
+    Buyer,
+    Sale,
     syncDatabase,
 };
