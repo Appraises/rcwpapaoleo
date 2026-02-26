@@ -47,9 +47,13 @@ const Layout = ({ children }) => {
                 color: 'white',
                 display: window.innerWidth > 768 ? 'flex' : 'none',
                 flexDirection: 'column',
-                padding: '2rem 1rem'
+                padding: '2rem 1rem',
+                position: 'sticky',
+                top: 0,
+                height: '100vh',
+                overflowY: 'auto'
             }} className="desktop-sidebar">
-                <h1 style={{ color: 'white', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h1 style={{ color: 'white', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
                     <img src="/logo.png" alt="Cat Óleo" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
                     <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Cat Óleo</span>
                 </h1>
