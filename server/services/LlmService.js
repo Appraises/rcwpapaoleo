@@ -78,19 +78,31 @@ Responda APENAS com a palavra SIM ou NAO. Nenhuma pontuação, justificativa ou 
             const cleanMessage = messageText.replace(/[^\w\s.,?!áéíóúàãõçê0-9]/gi, '').trim();
             if (!cleanMessage) return { type: 'UNKNOWN' };
 
-            const prompt = `Você é um assistente que analisa mensagens de coletadores de óleo. O coletador enviou: "${cleanMessage}".
+            const prompt = `Você é um assistente que analisa mensagens de coletadores de óleo.
+A sua função é classificar se a mensagem informa que o coletador concluiu a sua rota.
 
-O coletador pode estar dizendo que:
-1) Coletou TODOS os pontos da rota (ex: "coletei todos", "terminei tudo", "fiz todos", "finalizei", "rota completa")
-2) Coletou até um certo ponto N (ex: "coletei até o 4", "fiz até o 3", "parei no 5", "só consegui até o 2")
-3) Não está falando sobre conclusão de coleta
+Exemplos de classificação TODOS (coletou todos os pontos):
+"coletei todos" -> TODOS
+"terminei tudo" -> TODOS
+"fiz todos os pontos" -> TODOS
+"finalizei a rota" -> TODOS
+"ok todos" -> TODOS
 
-Responda APENAS com:
-- TODOS (se coletou tudo)
-- ATÉ N (onde N é o número, ex: ATÉ 4)
-- NAO (se não é sobre conclusão de coleta)
+Exemplos de classificação ATÉ N (parou no meio da rota, no ponto N):
+"coletei ate o 4" -> ATÉ 4
+"fiz até o cliente 3" -> ATÉ 3
+"parei no 5" -> ATÉ 5
+"so consegui ate o 2" -> ATÉ 2
 
-Responda apenas uma dessas opções. Nada mais.`;
+Exemplos de classificação NAO (mensagem comum, não é encerramento da rota):
+"bom dia" -> NAO
+"onde é a próxima parada?" -> NAO
+"furou o pneu" -> NAO
+"ok" -> NAO
+"estou indo pro primeiro" -> NAO
+
+Mensagem do coletador: "${cleanMessage}"
+Responda APENAS com a palavra TODOS, ATÉ N (onde N é o número), ou NAO. Nenhuma pontuação ou texto extra.`;
 
             const response = await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
