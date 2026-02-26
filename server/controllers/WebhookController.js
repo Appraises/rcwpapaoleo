@@ -54,17 +54,20 @@ exports.handleEvolutionWebhook = async (req, res) => {
             let remoteJid = msg.key.remoteJid;
 
             // Workaround for Meta's @lid privacy identifier
-            // If the message is masked as a @lid, Evolution API v2+ often includes the real ID in req.body.sender
+            // If the message is masked as a @lid, we must extract the real sender's phone number
             if (remoteJid && remoteJid.includes('@lid')) {
-                const realSender = req.body.sender || msg.sender;
-                const senderPn = msg.key?.senderPn;
-
-                if (realSender && realSender.includes('@s.whatsapp.net')) {
-                    console.log(`[Webhook] 👁️ @lid masked number detected! Swapping ${remoteJid} for real sender ${realSender}`);
+                // Try the community method first: message.key.senderPn
+                if (msg.key.senderPn) {
+                    const realSender = `${msg.key.senderPn}@s.whatsapp.net`;
+                    console.log(`[Webhook] 👁️ @lid masked number detected! Swapping ${remoteJid} for senderPn ${realSender}`);
                     remoteJid = realSender;
-                } else if (senderPn) {
-                    console.log(`[Webhook] 👁️ @lid masked number detected! Swapping ${remoteJid} for senderPn ${senderPn}`);
-                    remoteJid = `${senderPn}@s.whatsapp.net`;
+                } else if (req.body.data?.key?.participant) {
+                    // Fallback for group/broadcast-like lids
+                    const participant = req.body.data.key.participant;
+                    console.log(`[Webhook] 👁️ @lid masked number detected! Swapping ${remoteJid} for participant ${participant}`);
+                    remoteJid = participant;
+                } else {
+                    console.log(`[Webhook] ⚠️ Received @lid (${remoteJid}) but could not find senderPn or participant in payload to discover the real number!`);
                 }
             }
 
