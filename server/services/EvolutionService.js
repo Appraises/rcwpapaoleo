@@ -40,11 +40,18 @@ class EvolutionService {
 
     // ─── Format phone number ─────────────────────────────────────────
     static _formatPhone(phone) {
+        let domain = '';
+        if (phone.includes('@')) {
+            const parts = phone.split('@');
+            phone = parts[0];
+            domain = '@' + parts[1];
+        }
+
         let formatted = phone.replace(/[^0-9]/g, '');
         if (formatted.length === 11 || formatted.length === 10) {
             formatted = `55${formatted}`;
         }
-        return formatted;
+        return formatted + domain;
     }
 
     // ─── 1. Mark message as read (blue ticks) ────────────────────────
