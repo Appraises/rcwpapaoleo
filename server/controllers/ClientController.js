@@ -173,12 +173,14 @@ exports.updateClient = async (req, res) => {
         let finalLat = latitude || clientAddress?.latitude || client.latitude;
         let finalLng = longitude || clientAddress?.longitude || client.longitude;
 
+        const normalize = (val) => (val || '').toString().trim();
+
         const addressChanged =
-            street !== clientAddress?.street ||
-            number !== clientAddress?.number ||
-            district !== clientAddress?.district ||
-            city !== clientAddress?.city ||
-            zip !== clientAddress?.zip;
+            normalize(street) !== normalize(clientAddress?.street) ||
+            normalize(number) !== normalize(clientAddress?.number) ||
+            normalize(district) !== normalize(clientAddress?.district) ||
+            normalize(city) !== normalize(clientAddress?.city) ||
+            normalize(zip) !== normalize(clientAddress?.zip);
 
         if (!finalLat || !finalLng || addressChanged) {
             const coords = await GeocodingService.geocode({ street, number, district, city, state, zip });
