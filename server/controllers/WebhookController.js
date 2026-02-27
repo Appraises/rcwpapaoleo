@@ -88,19 +88,15 @@ exports.handleEvolutionWebhook = async (req, res) => {
             console.log(`[Webhook] Last 8 digits for matching: ${lastEight}`);
 
             // ── Try matching as a COLLECTOR (User with isCollector flag) first ──────────────
-            const allCollectors = await User.findAll({
-                where: { isCollector: true, phone: { [Op.ne]: null } },
+            const collector = await User.findOne({
+                where: {
+                    isCollector: true,
+                    phone: {
+                        [Op.like]: `%${lastEight}%`
+                    }
+                },
                 attributes: ['id', 'name', 'phone']
             });
-
-            let collector = null;
-            for (const u of allCollectors) {
-                const cleanedPhone = u.phone.replace(/\D/g, '');
-                if (cleanedPhone.endsWith(lastEight)) {
-                    collector = u;
-                    break;
-                }
-            }
 
             if (collector) {
                 console.log(`[Webhook] 🚛 MATCHED COLLECTOR: ${collector.name} (id=${collector.id}). Routing to CollectorQueueService...`);
@@ -111,46 +107,21 @@ exports.handleEvolutionWebhook = async (req, res) => {
             }
 
             // ── Try matching as a CLIENT ──────────────────────────────
-            // Include additional phones array to check multiple numbers per client
-            const allClients = await Client.findAll({
-                attributes: ['id', 'phone'],
+            // Search both main phone and additional phones using SQL LIKE queries
+            const client = await Client.findOne({
+                where: {
+                    [Op.or]: [
+                        { phone: { [Op.like]: `%${lastEight}%` } },
+                        { '$additionalPhones.phone$': { [Op.like]: `%${lastEight}%` } }
+                    ]
+                },
+                attributes: ['id', 'name', 'phone'],
                 include: [{
                     model: ClientPhone,
                     as: 'additionalPhones',
                     attributes: ['phone']
                 }]
             });
-            console.log(`[Webhook] Total clients in DB: ${allClients.length}`);
-
-            let client = null;
-            for (const c of allClients) {
-                // 1) Check main phone
-                let matched = false;
-                if (c.phone) {
-                    const cleanedDbPhone = c.phone.replace(/\D/g, '');
-                    console.log(`[Webhook]   Comparing DB phone "${c.phone}" (cleaned: "${cleanedDbPhone}") with last8: "${lastEight}" => endsWith: ${cleanedDbPhone.endsWith(lastEight)}`);
-                    if (cleanedDbPhone.endsWith(lastEight)) {
-                        matched = true;
-                    }
-                }
-
-                // 2) Check additional phones if main didn't match
-                if (!matched && c.additionalPhones && c.additionalPhones.length > 0) {
-                    for (const cp of c.additionalPhones) {
-                        const cleanedExtraPhone = cp.phone.replace(/\D/g, '');
-                        console.log(`[Webhook]   Comparing DB *EXTRA* phone "${cp.phone}" (cleaned: "${cleanedExtraPhone}") with last8: "${lastEight}" => endsWith: ${cleanedExtraPhone.endsWith(lastEight)}`);
-                        if (cleanedExtraPhone.endsWith(lastEight)) {
-                            matched = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (matched) {
-                    client = c;
-                    break;
-                }
-            }
 
             if (client) {
                 console.log(`[Webhook] ✅ MATCHED client id=${client.id}. Adding to queue...`);
