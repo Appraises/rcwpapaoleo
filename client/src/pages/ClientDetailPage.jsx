@@ -4,6 +4,8 @@ import { ArrowLeft, Plus, Edit, Trash2, Package, Droplet, Calendar, TrendingUp, 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../api/axios';
 import CollectionModal from '../components/CollectionModal';
+import toast from 'react-hot-toast';
+import { confirmToast } from '../utils/confirmToast';
 
 // Removed calculated optimal containers, now using manual boolean fields
 
@@ -71,14 +73,16 @@ const ClientDetailPage = () => {
     }, [id]);
 
     const handleDeleteCollection = async (collectionId) => {
-        if (window.confirm('Excluir esta coleta?')) {
+        confirmToast('Excluir esta coleta?', async () => {
             try {
                 await api.delete(`/collections/${collectionId}`);
+                toast.success('Coleta excluída com sucesso.');
                 fetchData();
             } catch (error) {
                 console.error('Error deleting collection:', error);
+                toast.error('Erro ao excluir coleta.');
             }
-        }
+        });
     };
 
     // Build monthly chart data (last 6 months)

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import api from '../api/axios';
 import CollectionModal from '../components/CollectionModal';
+import toast from 'react-hot-toast';
+import { confirmToast } from '../utils/confirmToast';
 
 const CollectionsPage = () => {
     const [collections, setCollections] = useState([]);
@@ -25,14 +27,16 @@ const CollectionsPage = () => {
     }, []);
 
     const handleDelete = async (id) => {
-        if (window.confirm('Excluir esta coleta?')) {
+        confirmToast('Excluir esta coleta?', async () => {
             try {
                 await api.delete(`/collections/${id}`);
+                toast.success('Coleta excluída com sucesso.');
                 fetchCollections();
             } catch (error) {
                 console.error('Error deleting collection:', error);
+                toast.error('Erro ao excluir coleta.');
             }
-        }
+        });
     };
 
     return (

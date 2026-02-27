@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Settings, DollarSign, MapPin, Building2, Save, CheckCircle, QrCode, RefreshCw, Wifi, WifiOff, Truck, Play } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
+import { confirmToast } from '../utils/confirmToast';
 
 const formatCNPJ = (value) => {
     let v = value.replace(/\D/g, '');
@@ -135,11 +137,11 @@ const SettingsPage = () => {
             if (res.data?.base64) {
                 setQrCode(res.data.base64);
             } else if (res.status === 202 || res.data?.hint) {
-                alert(res.data?.error || 'QR Code ainda não está pronto. Tente novamente em alguns segundos.');
+                toast.error(res.data?.error || 'QR Code ainda não está pronto. Tente novamente em alguns segundos.');
             }
         } catch (error) {
             const msg = error.response?.data?.error || 'Falha ao gerar QR Code';
-            alert(msg);
+            toast.error(msg);
         } finally {
             setLoadingWa(false);
         }
@@ -166,7 +168,7 @@ const SettingsPage = () => {
             setTimeout(() => setPriceSaved(false), 2500);
         } catch (error) {
             console.error('Error updating price:', error);
-            alert('Erro ao atualizar preço.');
+            toast.error('Erro ao atualizar preço.');
         }
     };
 
@@ -186,7 +188,7 @@ const SettingsPage = () => {
             setTimeout(() => setBaseSaved(false), 2500);
         } catch (error) {
             console.error('Error saving base:', error);
-            alert('Erro ao salvar base.');
+            toast.error('Erro ao salvar base.');
         }
     };
 
@@ -203,23 +205,24 @@ const SettingsPage = () => {
             setTimeout(() => setDispatchSaved(false), 2500);
         } catch (error) {
             console.error('Error saving dispatch config:', error);
-            alert('Erro ao salvar configurações de despacho.');
+            toast.error('Erro ao salvar configurações de despacho.');
         }
     };
 
     const handleManualDispatch = async () => {
-        if (!window.confirm('Deseja executar o despacho de rotas agora? Isso enviará as rotas via WhatsApp para os coletadores.')) return;
-        setDispatching(true);
-        setDispatchResult(null);
-        try {
-            const res = await api.post('/dispatch/run');
-            setDispatchResult(res.data);
-        } catch (error) {
-            console.error('Error dispatching:', error);
-            setDispatchResult({ dispatched: false, reason: error.response?.data?.error || error.message });
-        } finally {
-            setDispatching(false);
-        }
+        confirmToast('Deseja executar o despacho de rotas agora? Isso enviará as rotas via WhatsApp para os coletadores.', async () => {
+            setDispatching(true);
+            setDispatchResult(null);
+            try {
+                const res = await api.post('/dispatch/run');
+                setDispatchResult(res.data);
+            } catch (error) {
+                console.error('Error dispatching:', error);
+                setDispatchResult({ dispatched: false, reason: error.response?.data?.error || error.message });
+            } finally {
+                setDispatching(false);
+            }
+        });
     };
 
     const handleSaveCompany = (e) => {

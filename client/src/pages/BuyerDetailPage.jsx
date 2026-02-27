@@ -3,6 +3,8 @@ import api from '../api/axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Edit } from 'lucide-react';
 import SaleFormModal from '../components/SaleFormModal';
+import toast from 'react-hot-toast';
+import { confirmToast } from '../utils/confirmToast';
 
 const BuyerDetailPage = () => {
     const { id } = useParams();
@@ -19,7 +21,7 @@ const BuyerDetailPage = () => {
             setBuyer(response.data);
         } catch (error) {
             console.error('Error fetching buyer details:', error);
-            alert('Failed to load buyer details.');
+            toast.error('Falha ao carregar detalhes do comprador.');
             navigate('/vendas');
         } finally {
             setLoading(false);
@@ -49,22 +51,24 @@ const BuyerDetailPage = () => {
             }
             fetchBuyerDetails();
             handleCloseSaleModal();
+            toast.success('Venda salva com sucesso!');
         } catch (error) {
             console.error('Error saving sale:', error);
-            alert('Failed to save sale.');
+            toast.error('Falha ao salvar venda.');
         }
     };
 
     const handleDeleteSale = async (saleId) => {
-        if (window.confirm('Tem certeza que deseja apagar este registro de venda?')) {
+        confirmToast('Tem certeza que deseja apagar este registro de venda?', async () => {
             try {
                 await api.delete(`/sales/${saleId}`);
+                toast.success('Venda apagada com sucesso.');
                 fetchBuyerDetails();
             } catch (error) {
                 console.error('Error deleting sale:', error);
-                alert('Erro ao apagar venda.');
+                toast.error('Erro ao apagar venda.');
             }
-        }
+        });
     };
 
     if (loading) {

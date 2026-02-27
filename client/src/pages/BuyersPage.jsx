@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import BuyerFormModal from '../components/BuyerFormModal';
 import SaleFormModal from '../components/SaleFormModal';
 import { Plus, Eye, Edit, Trash2, DollarSign } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { confirmToast } from '../utils/confirmToast';
 
 const BuyersPage = () => {
     const [buyers, setBuyers] = useState([]);
@@ -24,7 +26,7 @@ const BuyersPage = () => {
             setBuyers(response.data);
         } catch (error) {
             console.error('Error fetching buyers:', error);
-            alert('Falha ao carregar compradores.');
+            toast.error('Falha ao carregar compradores.');
         } finally {
             setLoading(false);
         }
@@ -54,22 +56,24 @@ const BuyersPage = () => {
             }
             fetchBuyers();
             handleCloseBuyerModal();
+            toast.success('Comprador salvo com sucesso!');
         } catch (error) {
             console.error('Error saving buyer:', error);
-            alert('Falha ao salvar comprador.');
+            toast.error('Falha ao salvar comprador.');
         }
     };
 
     const handleDeleteBuyer = async (id) => {
-        if (window.confirm('Tem certeza que deseja apagar este comprador? Todas as vendas atreladas a ele também serão excluídas.')) {
+        confirmToast('Tem certeza que deseja apagar este comprador? Todas as vendas atreladas a ele também serão excluídas.', async () => {
             try {
                 await api.delete(`/buyers/${id}`);
+                toast.success('Comprador apagado com sucesso.');
                 fetchBuyers();
             } catch (error) {
                 console.error('Error deleting buyer:', error);
-                alert('Falha ao apagar comprador.');
+                toast.error('Falha ao apagar comprador.');
             }
-        }
+        });
     };
 
     // Handlers for Sale Form
@@ -87,11 +91,11 @@ const BuyersPage = () => {
         try {
             await api.post(`/sales`, { ...saleData, buyerId: buyerForSale.id });
             handleCloseSaleModal();
-            alert('Venda registrada com sucesso!');
+            toast.success('Venda registrada com sucesso!');
             // Opicionalmente navegar para a página do comprador ou recarregar os dados se eles mudarem
         } catch (error) {
             console.error('Error saving sale:', error);
-            alert('Falha ao salvar venda.');
+            toast.error('Falha ao salvar venda.');
         }
     };
 

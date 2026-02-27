@@ -3,6 +3,8 @@ import api from '../api/axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, Edit } from 'lucide-react';
 import SaleFormModal from '../components/SaleFormModal';
+import toast from 'react-hot-toast';
+import { confirmToast } from '../utils/confirmToast';
 
 const SalesHistoryPage = () => {
     const navigate = useNavigate();
@@ -18,7 +20,7 @@ const SalesHistoryPage = () => {
             setSales(response.data);
         } catch (error) {
             console.error('Error fetching all sales:', error);
-            alert('Falha ao carregar o histórico de vendas.');
+            toast.error('Falha ao carregar o histórico de vendas.');
         } finally {
             setLoading(false);
         }
@@ -43,23 +45,24 @@ const SalesHistoryPage = () => {
             await api.put(`/sales/${currentSale.id}`, saleData);
             fetchAllSales();
             handleCloseSaleModal();
-            alert('Venda atualizada com sucesso!');
+            toast.success('Venda atualizada com sucesso!');
         } catch (error) {
             console.error('Error saving sale:', error);
-            alert('Falha ao atualizar venda.');
+            toast.error('Falha ao atualizar venda.');
         }
     };
 
     const handleDeleteSale = async (saleId) => {
-        if (window.confirm('Tem certeza que deseja apagar este registro de venda?')) {
+        confirmToast('Tem certeza que deseja apagar este registro de venda?', async () => {
             try {
                 await api.delete(`/sales/${saleId}`);
+                toast.success('Venda apagada com sucesso.');
                 fetchAllSales();
             } catch (error) {
                 console.error('Error deleting sale:', error);
-                alert('Erro ao apagar venda.');
+                toast.error('Erro ao apagar venda.');
             }
-        }
+        });
     };
 
     const getTypeColor = (type) => {

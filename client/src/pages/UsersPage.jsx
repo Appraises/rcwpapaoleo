@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Shield, User as UserIcon, Phone, Truck } from 'lucide-react';
 import api from '../api/axios';
 import UserModal from '../components/UserModal';
+import toast from 'react-hot-toast';
+import { confirmToast } from '../utils/confirmToast';
 
 const UsersPage = () => {
     const [users, setUsers] = useState([]);
@@ -31,14 +33,16 @@ const UsersPage = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
+        confirmToast('Tem certeza que deseja excluir este usuário?', async () => {
             try {
                 await api.delete(`/auth/users/${id}`);
+                toast.success('Usuário excluído com sucesso.');
                 fetchUsers();
             } catch (error) {
                 console.error('Error deleting user:', error);
+                toast.error('Erro ao excluir usuário.');
             }
-        }
+        });
     };
 
     const handleCloseModal = () => {

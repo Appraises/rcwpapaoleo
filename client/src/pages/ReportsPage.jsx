@@ -3,6 +3,7 @@ import { Download, FileText, Calendar, Clock, Loader, Plus } from 'lucide-react'
 import api from '../api/axios';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import toast from 'react-hot-toast';
 
 const ReportsPage = () => {
     const [reports, setReports] = useState([]);
@@ -21,7 +22,7 @@ const ReportsPage = () => {
             setReports(response.data);
         } catch (error) {
             console.error('Error fetching reports:', error);
-            alert('Não foi possível carregar os relatórios.');
+            toast.error('Não foi possível carregar os relatórios.');
         } finally {
             setLoading(false);
         }
@@ -31,11 +32,11 @@ const ReportsPage = () => {
         try {
             setGenerating(true);
             await api.post('/reports/generate', { type });
-            alert(`Relatório ${type === 'weekly' ? 'Semanal' : 'Mensal'} gerado com sucesso!`);
+            toast.success(`Relatório ${type === 'weekly' ? 'Semanal' : 'Mensal'} gerado com sucesso!`);
             fetchReports(); // Refresh the list
         } catch (error) {
             console.error('Error generating report:', error);
-            alert('Erro ao gerar relatório. Apenas administradores podem gerar manualmente.');
+            toast.error('Erro ao gerar relatório. Apenas administradores podem gerar manualmente.');
         } finally {
             setGenerating(false);
         }

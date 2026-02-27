@@ -3,6 +3,8 @@ import axios from '../api/axios';
 import { MessageSquare, MapPin, Phone, CheckCircle, XCircle, Truck } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import toast from 'react-hot-toast';
+import { confirmToast } from '../utils/confirmToast';
 
 function RequestsPage() {
     const [requests, setRequests] = useState([]);
@@ -30,9 +32,10 @@ function RequestsPage() {
             await axios.put(`/collection-requests/${id}/status`, { status });
             // Remove from the pending list optimistically
             setRequests(requests.filter(req => req.id !== id));
+            toast.success('Status atualizado com sucesso!');
         } catch (err) {
             console.error('Error updating status', err);
-            alert('Erro ao atualizar o status da solicitação.');
+            toast.error('Erro ao atualizar o status da solicitação.');
         }
     };
 
@@ -124,9 +127,9 @@ function RequestsPage() {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        if (window.confirm('Tem certeza que deseja cancelar/ignorar esta solicitação?')) {
+                                        confirmToast('Tem certeza que deseja cancelar/ignorar esta solicitação?', () => {
                                             handleStatusUpdate(req.id, 'CANCELLED');
-                                        }
+                                        });
                                     }}
                                     style={{
                                         padding: '0.75rem 1rem', backgroundColor: '#fef2f2', color: '#ef4444',
