@@ -4,7 +4,7 @@ const path = require('path');
 const { Op } = require('sequelize');
 const { format } = require('date-fns');
 const { ptBR } = require('date-fns/locale');
-const { Collection, Client, User, SystemSetting, Report } = require('../models');
+const { Collection, Client, User, SystemSetting, Report, Sale, Buyer } = require('../models');
 
 class ReportService {
     static async generateReport(type, startDate, endDate) {
@@ -23,11 +23,24 @@ class ReportService {
                 order: [['date', 'ASC']]
             });
 
-            // 2. Fetch Global Selling Price
+            // 2. Fetch Sales
+            const sales = await Sale.findAll({
+                where: {
+                    date: {
+                        [Op.between]: [startDate, endDate]
+                    }
+                },
+                include: [
+                    { model: Buyer, attributes: ['name'] }
+                ],
+                order: [['date', 'ASC']]
+            });
+
+            // 3. Fetch Global Selling Price
             let sellingPriceSetting = await SystemSetting.findByPk('oil_selling_price');
             let sellingPrice = sellingPriceSetting ? parseFloat(sellingPriceSetting.value) : 0;
 
-            // 3. Calculate Totals
+            // 4. Calculate Collection Totals
             let totalVolume = 0;
             let totalCost = 0;
 
@@ -46,7 +59,31 @@ class ReportService {
                 };
             });
 
-            // 4. Setup PDF Document
+            // Format currency
+            const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            // 5. Calculate Sales Totals
+            let totalSalesVolume = 0;
+            let totalSalesRevenue = 0;
+
+            const salesTableData = sales.map(sale => {
+                const qty = sale.quantityLiters || 0;
+                const price = sale.pricePerLiter || 0;
+                const total = sale.totalValue || (qty * price);
+
+                totalSalesVolume += qty;
+                totalSalesRevenue += total;
+
+                return {
+                    date: format(new Date(sale.date), 'dd/MM/yyyy'),
+                    buyer: sale.Buyer ? sale.Buyer.name : 'Desconhecido',
+                    quantity: `${qty} L`,
+                    pricePerLiter: formatter.format(price),
+                    total: formatter.format(total)
+                };
+            });
+
+            // 6. Setup PDF Document
             const fileName = `relatorio-${type}-${Date.now()}.pdf`;
             const filePath = path.join(__dirname, '..', 'public', 'reports', fileName);
 
@@ -127,24 +164,108 @@ class ReportService {
                 currentY += 20;
             });
 
-            // --- FOOTER TOTALS ---
-            doc.moveDown(2);
+            // --- COLLECTIONS SUBTOTAL ---
+            doc.moveDown(1);
             doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#22c55e').stroke();
+            doc.moveDown(0.5);
+            doc.font('Helvetica-Bold').fontSize(11).fillColor('#333333');
+            doc.text(`Volume Coletado: ${totalVolume} Litros  |  Custo de Aquisição: ${formatter.format(totalCost)}`, 50, doc.y, { align: 'right' });
+
+            // ============ SALES SECTION ============
+            doc.moveDown(2);
+
+            // Check if we need a new page for sales section
+            if (doc.y > 550) {
+                doc.addPage();
+            }
+
+            doc.fillColor('#333333').fontSize(16).font('Helvetica-Bold').text('Resumo de Vendas', 50);
             doc.moveDown(1);
 
-            doc.font('Helvetica-Bold').fontSize(12);
-            doc.text(`Total Volume Coletado: ${totalVolume} Litros`, { align: 'right' });
+            if (salesTableData.length === 0) {
+                doc.font('Helvetica').fontSize(10).fillColor('#666666');
+                doc.text('Nenhuma venda registrada neste período.', 50);
+            } else {
+                // Sales Table
+                const salesTop = doc.y;
+                const sCol1 = 50;
+                const sCol2 = 130;
+                const sCol3 = 310;
+                const sCol4 = 390;
+                const sCol5 = 475;
 
-            // Format currency
-            const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-            doc.fillColor('#ef4444').text(`Custo Total de Aquisição: ${formatter.format(totalCost)}`, { align: 'right' });
+                doc.font('Helvetica-Bold').fontSize(10);
+                doc.text('Data', sCol1, salesTop);
+                doc.text('Comprador', sCol2, salesTop);
+                doc.text('Quantidade', sCol3, salesTop);
+                doc.text('R$/Litro', sCol4, salesTop);
+                doc.text('Total', sCol5, salesTop);
 
-            const totalRevenue = totalVolume * sellingPrice;
-            const profit = totalRevenue - totalCost;
+                doc.moveTo(50, salesTop + 15).lineTo(550, salesTop + 15).strokeColor('#cccccc').stroke();
 
+                let salesY = salesTop + 25;
+                doc.font('Helvetica').fontSize(10);
+
+                salesTableData.forEach((row, i) => {
+                    if (salesY > 700) {
+                        doc.addPage();
+                        salesY = 50;
+                    }
+
+                    if (i % 2 === 0) {
+                        doc.rect(50, salesY - 5, 500, 20).fill('#f0fdf4');
+                    }
+
+                    doc.fillColor('#333333');
+                    doc.text(row.date, sCol1, salesY);
+                    doc.text(row.buyer, sCol2, salesY, { width: 170, lineBreak: false });
+                    doc.text(row.quantity, sCol3, salesY);
+                    doc.text(row.pricePerLiter, sCol4, salesY);
+                    doc.text(row.total, sCol5, salesY);
+
+                    salesY += 20;
+                });
+
+                doc.y = salesY;
+            }
+
+            // --- SALES SUBTOTAL ---
+            doc.moveDown(1);
+            doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#3b82f6').stroke();
             doc.moveDown(0.5);
-            doc.fillColor('#3b82f6').font('Helvetica').fontSize(10).text(`Valor de Venda Previsto: ${formatter.format(totalRevenue)}`, { align: 'right' });
-            doc.fillColor('#22c55e').font('Helvetica-Bold').fontSize(12).text(`Lucro Bruto Estimado: ${formatter.format(profit)}`, { align: 'right' });
+            doc.font('Helvetica-Bold').fontSize(11).fillColor('#333333');
+            doc.text(`Volume Vendido: ${totalSalesVolume} Litros  |  Receita de Vendas: ${formatter.format(totalSalesRevenue)}`, 50, doc.y, { align: 'right' });
+
+            // ============ FINANCIAL SUMMARY ============
+            doc.moveDown(2);
+
+            if (doc.y > 620) {
+                doc.addPage();
+            }
+
+            // Background box for financial summary
+            const summaryY = doc.y;
+            doc.rect(40, summaryY - 10, 520, 110).fill('#f8fafc').strokeColor('#e2e8f0').stroke();
+
+            doc.fillColor('#333333').fontSize(14).font('Helvetica-Bold');
+            doc.text('Resumo Financeiro', 50, summaryY);
+            doc.moveDown(0.5);
+
+            doc.fontSize(11).font('Helvetica');
+            doc.fillColor('#ef4444').text(`Custo Total de Aquisição: ${formatter.format(totalCost)}`, 60);
+            doc.moveDown(0.3);
+
+            const projectedRevenue = totalVolume * sellingPrice;
+            doc.fillColor('#3b82f6').text(`Receita Projetada (preço de venda global): ${formatter.format(projectedRevenue)}`, 60);
+            doc.moveDown(0.3);
+
+            doc.fillColor('#22c55e').text(`Receita Real de Vendas: ${formatter.format(totalSalesRevenue)}`, 60);
+            doc.moveDown(0.3);
+
+            const realProfit = totalSalesRevenue - totalCost;
+            doc.font('Helvetica-Bold').fontSize(12);
+            doc.fillColor(realProfit >= 0 ? '#22c55e' : '#ef4444');
+            doc.text(`Lucro Bruto Real: ${formatter.format(realProfit)}`, 60);
 
             // Finalize PDF
             doc.end();
