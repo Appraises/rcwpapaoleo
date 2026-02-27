@@ -58,37 +58,39 @@ const CollectionsPage = () => {
             ) : collections.length === 0 ? (
                 <p>Nenhuma coleta registrada.</p>
             ) : (
-                <div style={{ backgroundColor: 'white', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-sm)', overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
-                        <thead>
-                            <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee', backgroundColor: '#f9f9f9' }}>
-                                <th style={{ padding: '1rem' }}>Data</th>
-                                <th style={{ padding: '1rem' }}>Cliente</th>
-                                <th style={{ padding: '1rem' }}>Coletor</th>
-                                <th style={{ padding: '1rem' }}>Qtd (L)</th>
-                                <th style={{ padding: '1rem' }}>Observação</th>
-                                <th style={{ padding: '1rem', textAlign: 'right' }}>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {collections.map(col => (
-                                <tr key={col.id} style={{ borderBottom: '1px solid #eee' }}>
-                                    <td style={{ padding: '1rem' }}>{new Date(col.date).toLocaleDateString()}</td>
-                                    <td style={{ padding: '1rem', fontWeight: '500' }}>{col.Client?.name || 'N/A'}</td>
-                                    <td style={{ padding: '1rem', color: '#555' }}>
-                                        {col.User?.name || col.User?.email || '-'}
-                                    </td>
-                                    <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{col.quantity}</td>
-                                    <td style={{ padding: '1rem', color: '#666' }}>{col.observation || '-'}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                        <button onClick={() => handleDelete(col.id)} style={{ color: 'var(--color-error)', background: 'none' }}>
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </td>
+                <div style={{ backgroundColor: 'white', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+                    <div className="table-responsive" style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
+                            <thead style={{ backgroundColor: 'var(--color-background)', borderBottom: '2px solid #eee' }}>
+                                <tr>
+                                    <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-light)' }}>Data</th>
+                                    <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-light)' }}>Cliente</th>
+                                    <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-light)' }}>Coletor</th>
+                                    <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-light)' }}>Qtd (L)</th>
+                                    <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-light)' }}>Observação</th>
+                                    <th style={{ padding: '1rem', fontWeight: '600', color: 'var(--color-text-light)', textAlign: 'center' }}>Ações</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {collections.map(col => (
+                                    <tr key={col.id} style={{ borderBottom: '1px solid #eee', transition: 'background-color 0.2s', ':hover': { backgroundColor: '#f8f9fa' } }}>
+                                        <td style={{ padding: '1rem', fontWeight: '500' }}>{new Date(col.date).toLocaleDateString()}</td>
+                                        <td style={{ padding: '1rem', fontWeight: 'bold' }}>{col.Client?.name || 'N/A'}</td>
+                                        <td style={{ padding: '1rem', color: '#555' }}>
+                                            {col.User?.name || col.User?.email || '-'}
+                                        </td>
+                                        <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{col.quantity}</td>
+                                        <td style={{ padding: '1rem', color: '#666' }}>{col.observation || '-'}</td>
+                                        <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                            <button onClick={() => handleDelete(col.id)} style={{ padding: '0.5rem', borderRadius: '4px', backgroundColor: '#fee2e2', color: '#b91c1c', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', outline: 'none' }}>
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 

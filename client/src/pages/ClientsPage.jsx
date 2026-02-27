@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Edit, Trash2, MapPin, AlertTriangle } from 'lucide-react';
 import api from '../api/axios';
+import { confirmToast } from '../utils/confirmToast';
+import toast from 'react-hot-toast';
 
 const formatDocument = (value) => {
     if (!value) return '';
@@ -77,15 +79,17 @@ const ClientsPage = () => {
     }, [search, selectedCity]);
 
     const handleDelete = async (id) => {
-        if (window.confirm('Tem certeza que deseja excluir este cliente?')) {
+        confirmToast('Tem certeza que deseja excluir este cliente?', async () => {
             try {
                 await api.delete(`/clients/${id}`);
+                toast.success('Cliente excluído com sucesso.');
                 fetchClients();
                 fetchCities(); // refresh cities after deletion
             } catch (error) {
                 console.error('Error deleting client:', error);
+                toast.error('Erro ao excluir cliente.');
             }
-        }
+        });
     };
 
     return (

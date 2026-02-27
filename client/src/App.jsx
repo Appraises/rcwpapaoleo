@@ -16,6 +16,7 @@ import BuyerDetailPage from './pages/BuyerDetailPage';
 import SalesHistoryPage from './pages/SalesHistoryPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
+import { Toaster } from 'react-hot-toast';
 
 const Layout = ({ children }) => {
     const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -180,6 +181,7 @@ function App() {
     return (
         <Router>
             <AuthProvider>
+                <Toaster position="top-right" />
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
 

@@ -4,6 +4,8 @@ import { Droplet, TrendingUp, Users, DollarSign, Settings, Wifi, WifiOff, AlertT
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
+import { confirmToast } from '../utils/confirmToast';
 
 const DashboardPage = () => {
     const { user } = useAuth();
@@ -49,14 +51,15 @@ const DashboardPage = () => {
     };
 
     const handleSyncWebhook = async () => {
-        if (!window.confirm('Tem certeza que deseja forçar a sincronização do Webhook do WhatsApp?')) return;
-        try {
-            const res = await api.post('/evolution/webhook/set');
-            alert(`Webhook configurado com sucesso!\nNova Rota: ${res.data.webhookUrl}`);
-        } catch (error) {
-            console.error('Erro ao configurar webhook:', error);
-            alert('Falha ao configurar webhook. Você definiu a variável EVOLUTION_WEBHOOK_URL ou o servidor consegue deduzir a URL?');
-        }
+        confirmToast('Tem certeza que deseja forçar a sincronização do Webhook do WhatsApp?', async () => {
+            try {
+                const res = await api.post('/evolution/webhook/set');
+                toast.success(`Webhook configurado com sucesso!\nNova Rota: ${res.data.webhookUrl}`, { duration: 5000 });
+            } catch (error) {
+                console.error('Erro ao configurar webhook:', error);
+                toast.error('Falha ao configurar webhook. Verifique as configurações.');
+            }
+        });
     };
 
     useEffect(() => {
@@ -74,9 +77,10 @@ const DashboardPage = () => {
             await api.post('/dashboard/financial/price', { price: parseFloat(newPrice) });
             await fetchFinancials();
             setIsPriceModalOpen(false);
+            toast.success('Preço atualizado com sucesso!');
         } catch (error) {
             console.error('Error updating price:', error);
-            alert('Erro ao atualizar preço');
+            toast.error('Erro ao atualizar preço');
         }
     };
 
