@@ -1,6 +1,8 @@
 const cron = require('node-cron');
+const fs = require('fs');
 const ReportService = require('../services/ReportService');
 const { dispatchDailyRoutes } = require('../services/DispatchService');
+const { backupDatabase } = require('../services/BackupService');
 
 const initCronJobs = () => {
     // === DAILY DISPATCH CRON JOB ===
@@ -58,7 +60,18 @@ const initCronJobs = () => {
         }
     });
 
-    console.log('[CRON] Report and dispatch scheduled tasks initialized.');
+    // === DAILY BACKUP CRON JOB ===
+    // Runs every day at 02:00 AM — uploads database backup to Google Drive
+    cron.schedule('0 2 * * *', async () => {
+        try {
+            console.log('[CRON] Starting daily database backup...');
+            await backupDatabase();
+        } catch (error) {
+            console.error('[CRON ERROR] Failed to perform database backup:', error);
+        }
+    });
+
+    console.log('[CRON] Report, dispatch, and backup scheduled tasks initialized.');
 };
 
 module.exports = initCronJobs;
