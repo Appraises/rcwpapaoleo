@@ -120,7 +120,8 @@ exports.handleEvolutionWebhook = async (req, res) => {
                     model: ClientPhone,
                     as: 'additionalPhones',
                     attributes: ['phone']
-                }]
+                }],
+                subQuery: false
             });
 
             if (client) {
