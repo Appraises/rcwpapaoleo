@@ -105,23 +105,42 @@ const BuyersPage = () => {
         <div className="container" style={{ padding: '2rem 1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h2>Compradores (Vendas)</h2>
-                <button
-                    onClick={() => handleShowBuyerModal()}
-                    style={{
-                        backgroundColor: 'var(--color-primary)',
-                        color: 'white',
-                        padding: '0.75rem 1.5rem',
-                        borderRadius: 'var(--border-radius)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        border: 'none',
-                        cursor: 'pointer'
-                    }}
-                >
-                    <Plus size={20} />
-                    Novo Comprador
-                </button>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    <Link
+                        to="/vendas/historico"
+                        style={{
+                            backgroundColor: '#f3f4f6',
+                            color: 'var(--color-text)',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: 'var(--border-radius)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            border: '1px solid #e5e7eb',
+                            textDecoration: 'none',
+                            fontWeight: 500
+                        }}
+                    >
+                        Histórico Geral
+                    </Link>
+                    <button
+                        onClick={() => handleShowBuyerModal()}
+                        style={{
+                            backgroundColor: 'var(--color-primary)',
+                            color: 'white',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: 'var(--border-radius)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            border: 'none',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <Plus size={20} />
+                        Novo Comprador
+                    </button>
+                </div>
             </div>
 
             {loading ? (

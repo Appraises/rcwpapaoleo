@@ -39,6 +39,22 @@ exports.getSalesByBuyer = async (req, res) => {
     }
 };
 
+exports.getAllSales = async (req, res) => {
+    try {
+        const sales = await Sale.findAll({
+            include: [{
+                model: Buyer,
+                attributes: ['name', 'type']
+            }],
+            order: [['date', 'DESC'], ['createdAt', 'DESC']]
+        });
+        res.json(sales);
+    } catch (error) {
+        console.error('Error fetching all sales:', error);
+        res.status(500).json({ error: 'Failed to fetch all sales' });
+    }
+};
+
 exports.updateSale = async (req, res) => {
     try {
         const { id } = req.params;

@@ -13,6 +13,7 @@ import SettingsPage from './pages/SettingsPage';
 import RequestsPage from './pages/RequestsPage';
 import BuyersPage from './pages/BuyersPage';
 import BuyerDetailPage from './pages/BuyerDetailPage';
+import SalesHistoryPage from './pages/SalesHistoryPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 
@@ -194,6 +195,7 @@ function App() {
                                     <Route path="/requests" element={<RequestsPage />} />
                                     <Route path="/collections" element={<CollectionsPage />} />
                                     <Route path="/vendas" element={<BuyersPage />} />
+                                    <Route path="/vendas/historico" element={<SalesHistoryPage />} />
                                     <Route path="/vendas/:id" element={<BuyerDetailPage />} />
                                     <Route path="/reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
                                     <Route path="/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
