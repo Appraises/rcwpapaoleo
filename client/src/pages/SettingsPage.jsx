@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, DollarSign, MapPin, Building2, Save, CheckCircle, QrCode, RefreshCw, Wifi, WifiOff, Truck, Play } from 'lucide-react';
+import { Settings, DollarSign, MapPin, Building2, Save, CheckCircle, QrCode, RefreshCw, Wifi, WifiOff, Truck, Play, DownloadCloud, Loader2 } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -73,6 +73,9 @@ const SettingsPage = () => {
     const [waStatus, setWaStatus] = useState(null);
     const [qrCode, setQrCode] = useState(null);
     const [loadingWa, setLoadingWa] = useState(false);
+
+    // Backup state
+    const [backingUp, setBackingUp] = useState(false);
 
     useEffect(() => {
         if (user?.role === 'admin') {
@@ -232,6 +235,23 @@ const SettingsPage = () => {
         localStorage.setItem('catoleo_company_phone', companyPhone);
         setCompanySaved(true);
         setTimeout(() => setCompanySaved(false), 2500);
+    };
+
+    const handleManualBackup = async () => {
+        confirmToast('Deseja gerar um backup do banco de dados agora? O arquivo será enviado imediatamente para o Telegram configurado.', async () => {
+            setBackingUp(true);
+            try {
+                const res = await api.post('/settings/backup');
+                if (res.data.success) {
+                    toast.success('Backup gerado e enviado com sucesso!');
+                }
+            } catch (error) {
+                console.error('Error backing up:', error);
+                toast.error(error.response?.data?.error || 'Erro ao realizar o backup.');
+            } finally {
+                setBackingUp(false);
+            }
+        });
     };
 
     // Styles
@@ -637,15 +657,28 @@ const SettingsPage = () => {
                             <div style={iconBadgeStyle('#f3f4f6')}>
                                 <Settings size={20} color="#4b5563" />
                             </div>
-                            <h3 style={cardTitleStyle}>Sistema e Servidor</h3>
+                            <div>
+                                <h3 style={cardTitleStyle}>Sistema e Servidor</h3>
+                                <p style={{ fontSize: '0.78rem', color: '#6b7280', margin: '0.2rem 0 0 0' }}>Manutenção, logs e backups manuais</p>
+                            </div>
                         </div>
-                        <button onClick={() => { setIsLogsModalOpen(true); fetchLogs(); }} style={{
-                            display: 'flex', alignItems: 'center', gap: '0.5rem',
-                            padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)',
-                            backgroundColor: '#1f2937', color: 'white', border: '1px solid #1f2937', cursor: 'pointer', fontSize: '0.85rem'
-                        }}>
-                            <Settings size={14} /> Ver Logs do Sistema
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            <button onClick={handleManualBackup} disabled={backingUp} style={{
+                                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)',
+                                backgroundColor: 'white', color: 'var(--color-primary-dark)', border: '1px solid #d1d5db', cursor: backingUp ? 'not-allowed' : 'pointer', fontSize: '0.85rem'
+                            }}>
+                                {backingUp ? <Loader2 size={14} className="animate-spin" /> : <DownloadCloud size={14} />}
+                                {backingUp ? 'Enviando...' : 'Fazer Backup Agora'}
+                            </button>
+                            <button onClick={() => { setIsLogsModalOpen(true); fetchLogs(); }} style={{
+                                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)',
+                                backgroundColor: '#1f2937', color: 'white', border: '1px solid #1f2937', cursor: 'pointer', fontSize: '0.85rem'
+                            }}>
+                                <Settings size={14} /> Ver Logs do PM2
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

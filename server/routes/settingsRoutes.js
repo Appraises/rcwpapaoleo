@@ -63,4 +63,20 @@ router.get('/maps-key', authMiddleware, (req, res) => {
     res.json({ key: process.env.GOOGLE_MAPS_API_KEY || '' });
 });
 
+// POST /api/settings/backup - trigger manual database backup
+router.post('/backup', authMiddleware, async (req, res) => {
+    try {
+        const { backupDatabase } = require('../services/BackupService');
+        const result = await backupDatabase();
+        if (result.success) {
+            res.json({ success: true, message: 'Backup concluído com sucesso!' });
+        } else {
+            res.status(500).json({ error: result.message || 'Falha ao realizar backup.' });
+        }
+    } catch (error) {
+        console.error('[Backup Route] Error:', error.message);
+        res.status(500).json({ error: 'Erro interno ao realizar backup.' });
+    }
+});
+
 module.exports = router;
