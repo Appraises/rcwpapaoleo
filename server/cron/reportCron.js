@@ -15,6 +15,8 @@ const initCronJobs = () => {
         } catch (error) {
             console.error('[CRON ERROR] Failed to dispatch daily routes:', error);
         }
+    }, {
+        timezone: 'America/Sao_Paulo'
     });
 
     // === WEEKLY CRON JOB ===
@@ -37,6 +39,8 @@ const initCronJobs = () => {
         } catch (error) {
             console.error('[CRON ERROR] Failed to generate weekly report:', error);
         }
+    }, {
+        timezone: 'America/Sao_Paulo'
     });
 
     // === MONTHLY CRON JOB ===
@@ -58,6 +62,8 @@ const initCronJobs = () => {
         } catch (error) {
             console.error('[CRON ERROR] Failed to generate monthly report:', error);
         }
+    }, {
+        timezone: 'America/Sao_Paulo'
     });
 
     // === DAILY BACKUP CRON JOB ===
@@ -69,6 +75,8 @@ const initCronJobs = () => {
         } catch (error) {
             console.error('[CRON ERROR] Failed to perform database backup:', error);
         }
+    }, {
+        timezone: 'America/Sao_Paulo'
     });
 
     console.log('[CRON] Report, dispatch, and backup scheduled tasks initialized.');
