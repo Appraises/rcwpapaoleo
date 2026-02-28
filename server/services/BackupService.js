@@ -1,14 +1,14 @@
 const fs = require('fs');
 const path = require('path');
-const { google } = require('googleapis');
+const axios = require('axios');
+const FormData = require('form-data');
 
-// Define path to the SQLite database and the Google credentials file
+// Define path to the SQLite database
 const dbPath = path.join(__dirname, '..', 'database.sqlite');
-const credentialsPath = path.join(__dirname, '..', 'drive-credentials.json');
 
 const backupDatabase = async () => {
     try {
-        console.log('[BACKUP] 🚀 Iniciando backup do banco de dados para o Google Drive...');
+        console.log('[BACKUP] 🚀 Iniciando backup do banco de dados para o Telegram...');
 
         // 1. Check if database exists
         if (!fs.existsSync(dbPath)) {
@@ -16,55 +16,57 @@ const backupDatabase = async () => {
             return { success: false, message: 'Database file not found.' };
         }
 
-        // 2. Check if credentials file exists
-        if (!fs.existsSync(credentialsPath)) {
-            console.warn('[BACKUP WARNING] Arquivo drive-credentials.json não encontrado. Backup abortado.');
-            return { success: false, message: 'Google Drive credentials not found.' };
+        // 2. Load configurations from .env
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        const chatId = process.env.TELEGRAM_CHAT_ID;
+
+        if (!botToken || !chatId) {
+            console.warn('[BACKUP WARNING] Variáveis TELEGRAM_BOT_TOKEN ou TELEGRAM_CHAT_ID não configuradas no .env. Backup abortado.');
+            return { success: false, message: 'Telegram credentials not configured.' };
         }
 
-        // 3. Ensure folder ID is configured in .env
-        const folderId = process.env.DRIVE_BACKUP_FOLDER_ID;
-        if (!folderId) {
-            console.warn('[BACKUP WARNING] Variável DRIVE_BACKUP_FOLDER_ID não configurada no .env. Backup abortado.');
-            return { success: false, message: 'DRIVE_BACKUP_FOLDER_ID not configured.' };
-        }
-
-        // 4. Authenticate with Google API
-        const auth = new google.auth.GoogleAuth({
-            keyFile: credentialsPath,
-            scopes: ['https://www.googleapis.com/auth/drive.file'],
-        });
-
-        const drive = google.drive({ version: 'v3', auth });
-
-        // 5. Prepare file metadata
+        // 3. Prepare file metadata
         const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         const timeStr = new Date().toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
         const fileName = `catoleo_backup_${dateStr}_${timeStr}.sqlite`;
 
-        const fileMetadata = {
-            name: fileName,
-            parents: [folderId]
-        };
-
-        const media = {
-            mimeType: 'application/vnd.sqlite3',
-            body: fs.createReadStream(dbPath)
-        };
-
-        // 6. Upload file to Google Drive
-        console.log(`[BACKUP] Fazendo upload do arquivo ${fileName} para a pasta ${folderId}...`);
-        const response = await drive.files.create({
-            resource: fileMetadata,
-            media: media,
-            fields: 'id, name'
+        // 4. Create FormData payload
+        const form = new FormData();
+        form.append('chat_id', chatId);
+        form.append('document', fs.createReadStream(dbPath), {
+            filename: fileName,
+            contentType: 'application/vnd.sqlite3',
         });
 
-        console.log(`[BACKUP] ✅ Backup concluído com sucesso! ID no Drive: ${response.data.id}`);
-        return { success: true, fileId: response.data.id, fileName: response.data.name };
+        let caption = `📦 *Backup Automático Concluído*\n\n`;
+        caption += `📅 Data: ${dateStr}\n`;
+        caption += `⏰ Hora: ${new Date().toTimeString().split(' ')[0]}\n`;
+        caption += `💾 Arquivo: \`${fileName}\``;
+
+        form.append('caption', caption);
+        form.append('parse_mode', 'Markdown');
+
+        // 5. Send to Telegram API
+        const telegramUrl = `https://api.telegram.org/bot${botToken}/sendDocument`;
+
+        console.log(`[BACKUP] Enviando arquivo ${fileName} para o Telegram (Chat ID: ${chatId})...`);
+
+        const response = await axios.post(telegramUrl, form, {
+            headers: {
+                ...form.getHeaders()
+            }
+        });
+
+        if (response.data.ok) {
+            console.log(`[BACKUP] ✅ Backup enviado com sucesso para o Telegram!`);
+            return { success: true, fileName: fileName };
+        } else {
+            console.error(`[BACKUP] ❌ Erro retornado pela API do Telegram:`, response.data);
+            return { success: false, message: 'Telegram API returned an error.' };
+        }
 
     } catch (error) {
-        console.error('[BACKUP ERROR] ❌ Falha ao realizar backup do banco de dados:', error);
+        console.error('[BACKUP ERROR] ❌ Falha ao enviar backup para o Telegram:', error.message);
         return { success: false, message: error.message };
     }
 };
