@@ -53,7 +53,7 @@ exports.deleteUser = async (req, res) => {
         const user = await User.findByPk(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        if (user.email === 'admin@catoleo.com') {
+        if (user.email === 'admin@rcwpapaoleo.com') {
             return res.status(403).json({ error: 'Not allowed to delete the main admin account' });
         }
 

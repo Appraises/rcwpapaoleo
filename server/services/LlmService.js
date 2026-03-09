@@ -9,7 +9,7 @@ class LlmService {
 
             if (!cleanMessage) return false;
 
-            const prompt = `Você é um assistente de triagem da empresa Cat Óleo (que recolhe óleo de cozinha usado).
+            const prompt = `Você é um assistente de triagem da empresa RCW Papa Óleo (que recolhe óleo de cozinha usado).
 O cliente está enviando mensagem para o número da empresa. Por causa desse contexto, ele muitas vezes NÃO VAI escrever a palavra "óleo" ou "bombona". Ele pode apenas dizer "pode vir buscar" ou "passa aqui".
 Sua função é identificar se a mensagem é um pedido de coleta. Considere também erros de português e gírias.
 

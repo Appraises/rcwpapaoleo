@@ -101,7 +101,7 @@ exports.getServerLogs = async (req, res) => {
     try {
         // Quick debugging route to view PM2 logs on the frontend.
         // It runs tail -n 100 on the pm2 logs.
-        exec('pm2 logs catoleo --lines 100 --nostream', (error, stdout, stderr) => {
+        exec('pm2 logs rcwpapaoleo --lines 100 --nostream', (error, stdout, stderr) => {
             if (error) {
                 return res.status(500).json({ error: 'Failed to fetch logs', details: stderr || error.message });
             }

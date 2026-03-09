@@ -28,7 +28,7 @@ const backupDatabase = async () => {
         // 3. Prepare file metadata
         const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         const timeStr = new Date().toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
-        const fileName = `catoleo_backup_${dateStr}_${timeStr}.sqlite`;
+        const fileName = `rcwpapaoleo_backup_${dateStr}_${timeStr}.sqlite`;
 
         // 4. Create FormData payload
         const form = new FormData();

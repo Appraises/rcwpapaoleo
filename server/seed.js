@@ -9,11 +9,11 @@ const seedUser = async () => {
             const hashedPassword = await bcrypt.hash('admin123', 10);
             await User.create({
                 name: 'Administrador',
-                email: 'admin@catoleo.com',
+                email: 'admin@rcwpapaoleo.com',
                 passwordHash: hashedPassword,
                 role: 'admin'
             });
-            console.log('Default user created: admin@catoleo.com / admin123');
+            console.log('Default user created: admin@rcwpapaoleo.com / admin123');
         }
     } catch (error) {
         console.error('Error seeding user:', error);

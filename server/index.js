@@ -51,7 +51,7 @@ app.use('/api/sales', saleRoutes);
 app.use('/api/public/reports', express.static(path.join(__dirname, 'public/reports')));
 
 app.get('/', (req, res) => {
-    res.send('Cat Óleo API is running');
+    res.send('RCW Papa Óleo API is running');
 });
 
 app.listen(PORT, () => {

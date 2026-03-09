@@ -1,7 +1,7 @@
 const fs = require('fs');
 async function test() {
     try {
-        const res = await fetch('http://catoleo.com:8080/chat/findContacts/catoleozap', {
+        const res = await fetch('http://rcwpapaoleo.com:8080/chat/findContacts/rcwpapaoleozap', {
             method: 'POST',
             body: JSON.stringify({}),
             headers: {

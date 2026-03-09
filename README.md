@@ -1,4 +1,4 @@
-# Cat Óleo Web Platform
+# RCW Papa Óleo Web Platform
 
 Plataforma moderna para gestão de coleta de óleo reciclável.
 
@@ -41,7 +41,7 @@ npm run dev
 O servidor rodará em `http://localhost:3001`.
 O banco de dados `database.sqlite` será criado automaticamente.
 **Usuário Admin criado automaticamente:**
-- Email: `admin@catoleo.com`
+- Email: `admin@rcwpapaoleo.com`
 - Senha: `admin123`
 
 ### Passo 3: Rodar o cliente (Frontend)

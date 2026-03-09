@@ -166,21 +166,21 @@ const RoutePage = () => {
 
     // Base/HQ location — persisted in localStorage
     const [baseLat, setBaseLat] = useState(() => {
-        const saved = localStorage.getItem('catoleo_base_lat');
+        const saved = localStorage.getItem('rcwpapaoleo_base_lat');
         return saved ? parseFloat(saved) : DEFAULT_BASE.lat;
     });
     const [baseLng, setBaseLng] = useState(() => {
-        const saved = localStorage.getItem('catoleo_base_lng');
+        const saved = localStorage.getItem('rcwpapaoleo_base_lng');
         return saved ? parseFloat(saved) : DEFAULT_BASE.lng;
     });
     const [baseName, setBaseName] = useState(() => {
-        return localStorage.getItem('catoleo_base_name') || DEFAULT_BASE.name;
+        return localStorage.getItem('rcwpapaoleo_base_name') || DEFAULT_BASE.name;
     });
 
     const saveBase = () => {
-        localStorage.setItem('catoleo_base_lat', baseLat.toString());
-        localStorage.setItem('catoleo_base_lng', baseLng.toString());
-        localStorage.setItem('catoleo_base_name', baseName);
+        localStorage.setItem('rcwpapaoleo_base_lat', baseLat.toString());
+        localStorage.setItem('rcwpapaoleo_base_lng', baseLng.toString());
+        localStorage.setItem('rcwpapaoleo_base_name', baseName);
         setShowBaseConfig(false);
     };
 

@@ -111,7 +111,7 @@ class QueueService {
 
                     // 4. Build and humanize the reply
                     if (client.phone) {
-                        const baseMessage = `Olá, ${client.name}! ♻️\n\nSeu pedido de coleta foi registrado pelo nosso assistente virtual.\nNossos coletadores já foram avisados e o seu óleo será recolhido o mais breve possível!\n\nA equipe Cat Óleo agradece a sua colaboração.`;
+                        const baseMessage = `Olá, ${client.name}! ♻️\n\nSeu pedido de coleta foi registrado pelo nosso assistente virtual.\nNossos coletadores já foram avisados e o seu óleo será recolhido o mais breve possível!\n\nA equipe RCW Papa Óleo agradece a sua colaboração.`;
                         const humanized = EvolutionService.humanizeMessage(baseMessage);
                         console.log(`[QueueService] 🔄 Humanized: "${humanized.substring(0, 80)}..."`);
 

@@ -59,9 +59,9 @@ const SettingsPage = () => {
     const [dispatchResult, setDispatchResult] = useState(null);
 
     // Company info
-    const [companyName, setCompanyName] = useState(() => localStorage.getItem('catoleo_company_name') || '');
-    const [companyCnpj, setCompanyCnpj] = useState(() => formatCNPJ(localStorage.getItem('catoleo_company_cnpj') || ''));
-    const [companyPhone, setCompanyPhone] = useState(() => formatPhone(localStorage.getItem('catoleo_company_phone') || ''));
+    const [companyName, setCompanyName] = useState(() => localStorage.getItem('rcwpapaoleo_company_name') || '');
+    const [companyCnpj, setCompanyCnpj] = useState(() => formatCNPJ(localStorage.getItem('rcwpapaoleo_company_cnpj') || ''));
+    const [companyPhone, setCompanyPhone] = useState(() => formatPhone(localStorage.getItem('rcwpapaoleo_company_phone') || ''));
     const [companySaved, setCompanySaved] = useState(false);
 
     // Logs state
@@ -184,9 +184,9 @@ const SettingsPage = () => {
                 base_lng: baseLng
             });
             // Also keep localStorage in sync for RoutePage
-            localStorage.setItem('catoleo_base_name', baseName);
-            localStorage.setItem('catoleo_base_lat', baseLat);
-            localStorage.setItem('catoleo_base_lng', baseLng);
+            localStorage.setItem('rcwpapaoleo_base_name', baseName);
+            localStorage.setItem('rcwpapaoleo_base_lat', baseLat);
+            localStorage.setItem('rcwpapaoleo_base_lng', baseLng);
             setBaseSaved(true);
             setTimeout(() => setBaseSaved(false), 2500);
         } catch (error) {
@@ -230,9 +230,9 @@ const SettingsPage = () => {
 
     const handleSaveCompany = (e) => {
         e.preventDefault();
-        localStorage.setItem('catoleo_company_name', companyName);
-        localStorage.setItem('catoleo_company_cnpj', companyCnpj);
-        localStorage.setItem('catoleo_company_phone', companyPhone);
+        localStorage.setItem('rcwpapaoleo_company_name', companyName);
+        localStorage.setItem('rcwpapaoleo_company_cnpj', companyCnpj);
+        localStorage.setItem('rcwpapaoleo_company_phone', companyPhone);
         setCompanySaved(true);
         setTimeout(() => setCompanySaved(false), 2500);
     };
@@ -563,7 +563,7 @@ const SettingsPage = () => {
                             type="text"
                             value={baseName}
                             onChange={(e) => setBaseName(e.target.value)}
-                            placeholder="Ex: Sede Cat Óleo"
+                            placeholder="Ex: Sede RCW Papa Óleo"
                             style={inputStyle}
                             required
                         />
@@ -618,7 +618,7 @@ const SettingsPage = () => {
                             type="text"
                             value={companyName}
                             onChange={(e) => setCompanyName(e.target.value)}
-                            placeholder="Ex: Cat Óleo Reciclagem LTDA"
+                            placeholder="Ex: RCW Papa Óleo Reciclagem LTDA"
                             style={inputStyle}
                         />
                     </div>

@@ -107,7 +107,7 @@ class ReportService {
             if (fs.existsSync(logoPath)) {
                 doc.image(logoPath, 50, 25, { width: 150 });
             } else {
-                doc.fillColor('white').fontSize(24).font('Helvetica-Bold').text('Cat Óleo', 50, 35);
+                doc.fillColor('white').fontSize(24).font('Helvetica-Bold').text('RCW Papa Óleo', 50, 35);
             }
 
             doc.fillColor('white')
