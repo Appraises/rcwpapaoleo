@@ -57,7 +57,7 @@ const Client = sequelize.define('Client', {
         type: DataTypes.FLOAT,
         allowNull: true,
     },
-    has25L: {
+    has20L: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
     },
@@ -65,11 +65,15 @@ const Client = sequelize.define('Client', {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
     },
+    has70L: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
     has100L: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
     },
-    has200L: {
+    has150L: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
     },

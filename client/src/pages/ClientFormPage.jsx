@@ -110,10 +110,11 @@ const ClientFormPage = () => {
         averageOilLiters: '',
         latitude: '',
         longitude: '',
-        has25L: false,
+        has20L: false,
         has50L: false,
+        has70L: false,
         has100L: false,
-        has200L: false,
+        has150L: false,
         recurrenceDays: ''
     });
     const [error, setError] = useState('');
@@ -262,10 +263,11 @@ const ClientFormPage = () => {
                         pricePerLiter: client.pricePerLiter || '',
                         averageOilLiters: client.averageOilLiters || '',
                         observations: client.observations || '',
-                        has25L: client.has25L || false,
+                        has20L: client.has20L || false,
                         has50L: client.has50L || false,
+                        has70L: client.has70L || false,
                         has100L: client.has100L || false,
-                        has200L: client.has200L || false,
+                        has150L: client.has150L || false,
                         recurrenceDays: client.recurrenceDays || '',
                     });
                 } catch (err) {
@@ -665,7 +667,7 @@ const ClientFormPage = () => {
                         <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1rem' }}>Selecione quais tamanhos de bombonas estão alocados neste cliente (clique para marcar/desmarcar).</p>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
-                            {[25, 50, 100, 200].map(size => {
+                            {[20, 50, 70, 100, 150].map(size => {
                                 const field = `has${size}L`;
                                 const isSelected = formData[field];
                                 return (

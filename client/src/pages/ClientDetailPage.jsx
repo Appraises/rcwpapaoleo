@@ -196,17 +196,18 @@ const ClientDetailPage = () => {
 
                         {client.observations && <p><strong>Obs:</strong> {client.observations}</p>}
 
-                        {(client.has25L || client.has50L || client.has100L || client.has200L) && (
+                        {(client.has20L || client.has50L || client.has70L || client.has100L || client.has150L) && (
                             <div style={{ marginTop: '0.75rem', padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: 'var(--border-radius)', border: '1px solid #bbf7d0' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '600', color: '#166534', fontSize: '0.9rem' }}>
                                         <Package size={16} /> Recipientes Cadastrados:
                                     </div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                        {client.has200L && <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '0.3rem 0.8rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: '600' }}>✓ 200L</span>}
+                                        {client.has150L && <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '0.3rem 0.8rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: '600' }}>✓ 150L</span>}
                                         {client.has100L && <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '0.3rem 0.8rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: '600' }}>✓ 100L</span>}
+                                        {client.has70L && <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '0.3rem 0.8rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: '600' }}>✓ 70L</span>}
                                         {client.has50L && <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '0.3rem 0.8rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: '600' }}>✓ 50L</span>}
-                                        {client.has25L && <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '0.3rem 0.8rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: '600' }}>✓ 25L</span>}
+                                        {client.has20L && <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '0.3rem 0.8rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: '600' }}>✓ 20L</span>}
                                     </div>
                                 </div>
                             </div>

@@ -8,7 +8,7 @@ exports.createClient = async (req, res) => {
             name, tradeName, document, phone, additionalPhones,
             street, number, district, city, state, zip, reference, latitude, longitude,
             pricePerLiter, averageOilLiters, observations,
-            has25L, has50L, has100L, has200L, recurrenceDays
+            has20L, has50L, has70L, has100L, has150L, recurrenceDays
         } = req.body;
 
         // Server-side geocoding if frontend didn't provide coordinates
@@ -31,7 +31,7 @@ exports.createClient = async (req, res) => {
             name, tradeName, document: cleanDocument, phone,
             address: fullAddressLegacy,
             pricePerLiter, averageOilLiters, observations,
-            has25L, has50L, has100L, has200L, recurrenceDays
+            has20L, has50L, has70L, has100L, has150L, recurrenceDays
         });
 
         await Address.create({
@@ -200,7 +200,7 @@ exports.updateClient = async (req, res) => {
         }
         if (!client) return res.status(404).json({ error: 'Client not found' });
 
-        const { name, tradeName, document, phone, additionalPhones, address, street, number, district, city, state, zip, reference, pricePerLiter, averageOilLiters, latitude, longitude, observations, has25L, has50L, has100L, has200L, recurrenceDays } = req.body;
+        const { name, tradeName, document, phone, additionalPhones, address, street, number, district, city, state, zip, reference, pricePerLiter, averageOilLiters, latitude, longitude, observations, has20L, has50L, has70L, has100L, has150L, recurrenceDays } = req.body;
 
         // Resilient Address Lookup (in case the 'include' above failed)
         let clientAddress = client.Address;
@@ -234,7 +234,7 @@ exports.updateClient = async (req, res) => {
 
         const cleanDocument = (document || '').toString().trim() || null;
 
-        await client.update({ name, tradeName, document: cleanDocument, phone, address: fullAddress, pricePerLiter, averageOilLiters, observations, has25L, has50L, has100L, has200L, recurrenceDays });
+        await client.update({ name, tradeName, document: cleanDocument, phone, address: fullAddress, pricePerLiter, averageOilLiters, observations, has20L, has50L, has70L, has100L, has150L, recurrenceDays });
 
         // Update or create Address safely (to prevent duplicate rows if include failed)
         try {
