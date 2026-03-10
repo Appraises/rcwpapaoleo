@@ -2,6 +2,7 @@ const { Client, User, ClientPhone } = require('../models');
 const { Op } = require('sequelize');
 const QueueService = require('../services/QueueService');
 const CollectorQueueService = require('../services/CollectorQueueService');
+const TranscriptionService = require('../services/TranscriptionService');
 const EvolutionService = require('../services/EvolutionService');
 
 exports.handleEvolutionWebhook = async (req, res) => {
@@ -82,7 +83,13 @@ exports.handleEvolutionWebhook = async (req, res) => {
             console.log(`[Webhook] Raw phone number extracted: ${rawNumber}`);
 
             const textContent = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
-            console.log(`[Webhook] Text content: "${textContent}"`);
+            const isAudioMessage = !!msg.message?.audioMessage;
+
+            if (isAudioMessage) {
+                console.log(`[Webhook] 🎙️ Audio message detected from ${rawNumber}`);
+            } else {
+                console.log(`[Webhook] Text content: "${textContent}"`);
+            }
 
             const lastEight = rawNumber.slice(-8);
             console.log(`[Webhook] Last 8 digits for matching: ${lastEight}`);
@@ -99,10 +106,22 @@ exports.handleEvolutionWebhook = async (req, res) => {
             });
 
             if (collector) {
-                console.log(`[Webhook] 🚛 MATCHED COLLECTOR: ${collector.name} (id=${collector.id}). Routing to CollectorQueueService...`);
                 const messageId = msg.key?.id;
-                // Add to queue instead of processing directly to prevent parallel EVOLUTION API requests
-                CollectorQueueService.add(collector.id, textContent, remoteJid, messageId);
+                if (isAudioMessage) {
+                    console.log(`[Webhook] 🎙️🚛 Audio from collector ${collector.name} (id=${collector.id}). Sending to transcription queue...`);
+                    TranscriptionService.add({
+                        entityId: collector.id,
+                        messageId,
+                        remoteJid,
+                        isCollector: true,
+                        messageKey: msg.key
+                    });
+                } else if (textContent) {
+                    console.log(`[Webhook] 🚛 MATCHED COLLECTOR: ${collector.name} (id=${collector.id}). Routing to CollectorQueueService...`);
+                    CollectorQueueService.add(collector.id, textContent, remoteJid, messageId);
+                } else {
+                    console.log(`[Webhook] ⏩ No usable content from collector ${collector.id}. Skipping.`);
+                }
                 continue;
             }
 
@@ -125,8 +144,21 @@ exports.handleEvolutionWebhook = async (req, res) => {
             });
 
             if (client) {
-                console.log(`[Webhook] ✅ MATCHED client id=${client.id}. Adding to queue...`);
-                QueueService.add(client.id, textContent, remoteJid, msg.key.id);
+                if (isAudioMessage) {
+                    console.log(`[Webhook] 🎙️ Audio from client ${client.name} (id=${client.id}). Sending to transcription queue...`);
+                    TranscriptionService.add({
+                        entityId: client.id,
+                        messageId: msg.key.id,
+                        remoteJid,
+                        isCollector: false,
+                        messageKey: msg.key
+                    });
+                } else if (textContent) {
+                    console.log(`[Webhook] ✅ MATCHED client id=${client.id}. Adding to queue...`);
+                    QueueService.add(client.id, textContent, remoteJid, msg.key.id);
+                } else {
+                    console.log(`[Webhook] ⏩ No usable content from client ${client.id}. Skipping.`);
+                }
             } else {
                 console.log(`[Webhook] ❌ No matching client or collector found for number: ${rawNumber}`);
 
