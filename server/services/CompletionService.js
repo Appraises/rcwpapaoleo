@@ -174,10 +174,21 @@ function buildLocationName(req) {
  */
 async function sendOwnerReport(collectorName, completedLocations, pendingLocations) {
     try {
-        const ownerPhone = await getSetting('dispatch_owner_phone', null);
+        const ownerPhoneRaw = await getSetting('dispatch_owner_phone', null);
 
-        if (!ownerPhone) {
+        if (!ownerPhoneRaw) {
             console.log('[CompletionService] ℹ️ No owner phone configured (dispatch_owner_phone). Skipping report.');
+            return;
+        }
+
+        // Support multiple phone numbers separated by commas
+        const phones = ownerPhoneRaw
+            .split(',')
+            .map(p => p.replace(/\D/g, '').trim())
+            .filter(p => p.length >= 10);
+
+        if (phones.length === 0) {
+            console.log('[CompletionService] ℹ️ No valid phone numbers found in dispatch_owner_phone. Skipping report.');
             return;
         }
 
@@ -212,9 +223,15 @@ async function sendOwnerReport(collectorName, completedLocations, pendingLocatio
         }
 
         const reportMsg = lines.join('\n');
-        const ownerRemoteJid = `${EvolutionService._formatPhone(ownerPhone)}@s.whatsapp.net`;
-        await EvolutionService.simulateTypingAndSend(ownerPhone, reportMsg, ownerRemoteJid);
-        console.log(`[CompletionService] 📤 Owner report sent to ${ownerPhone}`);
+
+        // Send to all configured phones
+        for (const phone of phones) {
+            const remoteJid = `${EvolutionService._formatPhone(phone)}@s.whatsapp.net`;
+            await EvolutionService.simulateTypingAndSend(phone, reportMsg, remoteJid);
+            console.log(`[CompletionService] 📤 Owner report sent to ${phone}`);
+        }
+
+        console.log(`[CompletionService] ✅ Report sent to ${phones.length} recipient(s)`);
 
     } catch (error) {
         console.error(`[CompletionService] ❌ Error sending owner report:`, error);

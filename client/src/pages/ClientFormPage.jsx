@@ -113,7 +113,8 @@ const ClientFormPage = () => {
         has25L: false,
         has50L: false,
         has100L: false,
-        has200L: false
+        has200L: false,
+        recurrenceDays: ''
     });
     const [error, setError] = useState('');
     const [docError, setDocError] = useState('');
@@ -265,6 +266,7 @@ const ClientFormPage = () => {
                         has50L: client.has50L || false,
                         has100L: client.has100L || false,
                         has200L: client.has200L || false,
+                        recurrenceDays: client.recurrenceDays || '',
                     });
                 } catch (err) {
                     setError('Erro ao carregar dados do cliente.');
@@ -363,7 +365,8 @@ const ClientFormPage = () => {
                 additionalPhones: formData.additionalPhones.filter(p => p).map(p => p.replace(/\D/g, '')),
                 zip: formData.zip.replace(/\D/g, ''),
                 pricePerLiter: formData.pricePerLiter ? parseFloat(String(formData.pricePerLiter).replace(',', '.')) : 0,
-                averageOilLiters: formData.averageOilLiters ? parseFloat(String(formData.averageOilLiters).replace(',', '.')) : 0
+                averageOilLiters: formData.averageOilLiters ? parseFloat(String(formData.averageOilLiters).replace(',', '.')) : 0,
+                recurrenceDays: formData.recurrenceDays ? parseInt(formData.recurrenceDays, 10) : null
             };
 
             if (id) {
@@ -420,18 +423,18 @@ const ClientFormPage = () => {
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>CPF ou CNPJ *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>CPF ou CNPJ</label>
                             <input
                                 type="text"
                                 name="document"
                                 value={formData.document}
                                 onChange={handleChange}
-                                required
                                 maxLength={18}
                                 style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: docError ? '1px solid var(--color-error)' : '1px solid #ddd' }}
                             />
                             {docError && <span style={{ color: 'var(--color-error)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{docError}</span>}
                             {cnpjLoading && <span style={{ color: '#2563eb', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>🔍 Buscando dados do CNPJ...</span>}
+                            <small style={{ color: '#666', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>Preenche os dados automaticamente (apenas CNPJ).</small>
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Telefone Principal (WhatsApp)*</label>
@@ -637,6 +640,20 @@ const ClientFormPage = () => {
                                 style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
                             />
                             <small style={{ color: '#666' }}>Quantidade média de litros de óleo por coleta.</small>
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Recorrência (dias)</label>
+                            <input
+                                type="number"
+                                min="1"
+                                step="1"
+                                name="recurrenceDays"
+                                value={formData.recurrenceDays || ''}
+                                onChange={handleChange}
+                                placeholder="Ex: 30"
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
+                            />
+                            <small style={{ color: '#666' }}>Deixe vazio para não enviar alertas de recorrência.</small>
                         </div>
                     </div>
 

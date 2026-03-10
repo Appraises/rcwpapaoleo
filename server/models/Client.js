@@ -17,7 +17,7 @@ const Client = sequelize.define('Client', {
     },
     document: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         unique: true,
     },
     phone: {
@@ -73,6 +73,16 @@ const Client = sequelize.define('Client', {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
     },
+    recurrenceDays: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        comment: 'Interval in days between expected collections'
+    },
+    lastReminderDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+        comment: 'Date when the last churn memory was sent'
+    }
 });
 
 module.exports = Client;

@@ -49,7 +49,7 @@ function optimizeRoute(base, clients) {
 
     let bestOrder;
 
-    if (n <= 18) {
+    if (n <= 20) {
         // ═══════════════════════════════════════════════
         // HELD-KARP (exact, optimal) — O(n² · 2ⁿ)
         // ═══════════════════════════════════════════════

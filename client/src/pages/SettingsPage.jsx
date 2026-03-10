@@ -52,7 +52,6 @@ const SettingsPage = () => {
     const [collectors, setCollectors] = useState([]);
     const [primaryCollectorId, setPrimaryCollectorId] = useState('');
     const [secondaryCollectorId, setSecondaryCollectorId] = useState('');
-    const [splitThreshold, setSplitThreshold] = useState('15');
     const [ownerPhone, setOwnerPhone] = useState('');
     const [dispatchSaved, setDispatchSaved] = useState(false);
     const [dispatching, setDispatching] = useState(false);
@@ -101,14 +100,13 @@ const SettingsPage = () => {
 
     const fetchSettings = async () => {
         try {
-            const res = await api.get('/settings?keys=base_lat,base_lng,base_name,dispatch_primary_collector_id,dispatch_secondary_collector_id,dispatch_split_threshold,dispatch_owner_phone');
+            const res = await api.get('/settings?keys=base_lat,base_lng,base_name,dispatch_primary_collector_id,dispatch_secondary_collector_id,dispatch_owner_phone');
             const s = res.data;
             if (s.base_name) setBaseName(s.base_name);
             if (s.base_lat) setBaseLat(s.base_lat);
             if (s.base_lng) setBaseLng(s.base_lng);
             if (s.dispatch_primary_collector_id) setPrimaryCollectorId(s.dispatch_primary_collector_id);
             if (s.dispatch_secondary_collector_id) setSecondaryCollectorId(s.dispatch_secondary_collector_id);
-            if (s.dispatch_split_threshold) setSplitThreshold(s.dispatch_split_threshold);
             if (s.dispatch_owner_phone) setOwnerPhone(formatPhone(s.dispatch_owner_phone));
         } catch (error) {
             console.error('Error fetching settings:', error);
@@ -201,7 +199,6 @@ const SettingsPage = () => {
             await api.put('/settings', {
                 dispatch_primary_collector_id: primaryCollectorId,
                 dispatch_secondary_collector_id: secondaryCollectorId,
-                dispatch_split_threshold: splitThreshold,
                 dispatch_owner_phone: ownerPhone
             });
             setDispatchSaved(true);
@@ -225,7 +222,7 @@ const SettingsPage = () => {
             } finally {
                 setDispatching(false);
             }
-        });
+        }, 'warning');
     };
 
     const handleSaveCompany = (e) => {
@@ -251,7 +248,7 @@ const SettingsPage = () => {
             } finally {
                 setBackingUp(false);
             }
-        });
+        }, 'warning');
     };
 
     // Styles
@@ -475,42 +472,32 @@ const SettingsPage = () => {
                             </select>
                         </div>
                         <div style={fieldGroupStyle}>
-                            <label style={labelStyle}>Coletador Secundário (se muitas solicitações)</label>
+                            <label style={labelStyle}>Coletador Secundário *</label>
+                            <p style={{ fontSize: '0.78rem', color: '#9ca3af', marginTop: '0', marginBottom: '0.35rem' }}>
+                                As rotas são sempre divididas em 2 blocos geográficos — um para cada coletador.
+                            </p>
                             <select
                                 value={secondaryCollectorId}
                                 onChange={(e) => setSecondaryCollectorId(e.target.value)}
                                 style={selectStyle}
                             >
-                                <option value="">Nenhum (apenas 1 coletador)</option>
+                                <option value="">Selecionar coletador secundário...</option>
                                 {collectors.map(c => (
                                     <option key={c.id} value={c.id}>{c.name} — {c.phone}</option>
                                 ))}
                             </select>
                         </div>
                         <div style={fieldGroupStyle}>
-                            <label style={labelStyle}>Limiar para dividir rotas</label>
+                            <label style={labelStyle}>WhatsApp para relatório diário</label>
                             <p style={{ fontSize: '0.78rem', color: '#9ca3af', marginTop: '0', marginBottom: '0.35rem' }}>
-                                Se tiver mais que esse número de solicitações, a rota é dividida entre 2 coletadores.
+                                Recebe o resumo das coletas do dia. Separe múltiplos números com vírgula.
                             </p>
-                            <input
-                                type="number"
-                                min="1"
-                                value={splitThreshold}
-                                onChange={(e) => setSplitThreshold(e.target.value)}
-                                style={{ ...inputStyle, maxWidth: '120px' }}
-                            />
-                        </div>
-                        <div style={fieldGroupStyle}>
-                            <label style={labelStyle}>WhatsApp do Dono/Admin (para relatório diário)</label>
-                            <p style={{ fontSize: '0.78rem', color: '#9ca3af', marginTop: '0', marginBottom: '0.35rem' }}>
-                                Recebe o resumo das coletas do dia quando o coletador finalizar o expediente.
-                            </p>
-                            <input
-                                type="text"
+                            <textarea
                                 value={ownerPhone}
                                 onChange={(e) => setOwnerPhone(e.target.value)}
-                                placeholder="(79) 99999-9999"
-                                style={inputStyle}
+                                placeholder="(79) 99999-9999, (79) 88888-8888"
+                                rows={2}
+                                style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
                             />
                         </div>
                         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>

@@ -1,4 +1,5 @@
 const cron = require('node-cron');
+const { initChurnCron } = require('./churnCron');
 const fs = require('fs');
 const ReportService = require('../services/ReportService');
 const { dispatchDailyRoutes } = require('../services/DispatchService');
@@ -79,7 +80,9 @@ const initCronJobs = () => {
         timezone: 'America/Sao_Paulo'
     });
 
-    console.log('[CRON] Report, dispatch, and backup scheduled tasks initialized.');
+    initChurnCron();
+
+    console.log('[CRON] Report, dispatch, backup, and churn scheduled tasks initialized.');
 };
 
 module.exports = initCronJobs;

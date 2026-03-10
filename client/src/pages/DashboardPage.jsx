@@ -59,7 +59,7 @@ const DashboardPage = () => {
                 console.error('Erro ao configurar webhook:', error);
                 toast.error('Falha ao configurar webhook. Verifique as configurações.');
             }
-        });
+        }, 'warning');
     };
 
     useEffect(() => {

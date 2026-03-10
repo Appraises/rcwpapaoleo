@@ -243,6 +243,20 @@ const ClientsPage = () => {
                                         <MapPin size={13} /> {client.Address.city}
                                     </p>
                                 )}
+                                {client.recurrenceDays > 0 && (
+                                    <p style={{
+                                        fontSize: '0.8rem',
+                                        color: '#047857',
+                                        backgroundColor: '#ecfdf5',
+                                        padding: '0.2rem 0.5rem',
+                                        borderRadius: '4px',
+                                        display: 'inline-block',
+                                        marginTop: '0.5rem',
+                                        border: '1px solid #a7f3d0'
+                                    }}>
+                                        🔁 Recorrência: {client.recurrenceDays} dias
+                                    </p>
+                                )}
 
                                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem', flexWrap: 'wrap' }}>
                                     <Link to={`/clients/${client.id}`} style={{

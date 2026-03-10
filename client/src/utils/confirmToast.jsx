@@ -1,7 +1,27 @@
 import toast from 'react-hot-toast';
 import React from 'react';
 
-export const confirmToast = (message, onConfirm) => {
+const severityStyles = {
+    danger: {
+        border: '1px solid #f87171',
+        color: '#7f1d1d',
+        confirmBg: '#dc2626',
+    },
+    warning: {
+        border: '1px solid #fbbf24',
+        color: '#78350f',
+        confirmBg: '#d97706',
+    }
+};
+
+/**
+ * @param {string} message
+ * @param {Function} onConfirm
+ * @param {'danger'|'warning'} [severity='danger'] - 'danger' (red) for destructive actions, 'warning' (yellow) for non-critical confirmations.
+ */
+export const confirmToast = (message, onConfirm, severity = 'danger') => {
+    const s = severityStyles[severity] || severityStyles.danger;
+
     toast((t) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <span style={{ fontWeight: '500' }}>{message}</span>
@@ -23,7 +43,7 @@ export const confirmToast = (message, onConfirm) => {
                     }}
                     style={{
                         padding: '0.35rem 0.75rem', borderRadius: '4px', border: 'none',
-                        background: 'var(--color-primary, #3b82f6)', color: 'white', cursor: 'pointer',
+                        background: s.confirmBg, color: 'white', cursor: 'pointer',
                         fontWeight: '600', fontSize: '0.85rem'
                     }}
                 >
@@ -33,6 +53,6 @@ export const confirmToast = (message, onConfirm) => {
         </div>
     ), {
         duration: 8000,
-        style: { border: '1px solid #f87171', padding: '16px', color: '#7f1d1d' }
+        style: { border: s.border, padding: '16px', color: s.color }
     });
 };

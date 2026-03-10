@@ -131,6 +131,15 @@ const noDispatchReplies = [
     (name) => `${name}, não achei nenhuma rota aberta pra hoje. Já pode ter sido encerrada! 👍`,
 ];
 
+// ─── Churn Reminder (Prevenção de Inatividade) ──────────────────────
+
+const churnReminders = [
+    (name) => `Olá ${name}! Tudo bem?\n\nPercebemos que já faz um tempinho desde a nossa última coleta de óleo com vocês. Precisam de uma nova coleta? ♻️💚\n\nÉ só responder com "Sim" e já enviamos alguém no próximo roteiro!`,
+    (name) => `Oi ${name}, tudo joia?\n\nPassando pra lembrar da nossa coleta de óleo! Já faz um tempo desde que passamos aí. 🛢️\n\nSe precisarem recolher o óleo, é só dar um "ok" aqui. Valeu! 💚`,
+    (name) => `Bom dia ${name}!\n\nVi no sistema que já faz um tempo da nossa última coleta aí. Querem agendar pro próximo roteiro? ♻️🚛\n\nQualquer coisa é só responder essa mensagem!`,
+    (name) => `Oi ${name}! RCW Papa Óleo passando pra dar um alô. 👋\n\nJá estamos na época da coleta de vocês? Se o tambor/bombona já tiver cheio, fiquem à vontade pra pedir a coleta por aqui. 💚🛢️`
+];
+
 // ─── Exports ──────────────────────────────────────────────────────────
 
 module.exports = {
@@ -157,4 +166,7 @@ module.exports = {
         allDone: () => pick(ownerAllDoneMessages),
         pendingWarning: (count) => pick(ownerPendingWarnings)(count),
     },
+    churn: {
+        reminder: (name) => pick(churnReminders)(name),
+    }
 };
