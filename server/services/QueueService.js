@@ -93,7 +93,7 @@ class QueueService {
                     console.log(`[QueueService] ⚠️ Duplicate collection request ignored for client ${task.clientId} (Status: ${existingRequest.status})`);
 
                     if (client.phone) {
-                        const duplicateMessage = `Olá, ${client.name}! ♻️\n\nNós já recebemos o seu pedido de coleta recentemente e nossa equipe passará em breve para recolher o seu óleo.\n\nAgradecemos o aviso!`;
+                        const duplicateMessage = `Olá, ${client.name}! ♻️\n\nNós já recebemos o seu pedido de coleta recentemente e nossa equipe passará em breve para recolher o seu óleo.\n\nA equipe RCW Papa Óleo agradece o aviso!`;
                         const humanizedDuplicate = EvolutionService.humanizeMessage(duplicateMessage);
                         console.log(`[QueueService] 🔄 Humanized (Duplicate): "${humanizedDuplicate.substring(0, 80)}..."`);
 
