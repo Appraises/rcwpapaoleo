@@ -61,7 +61,7 @@ exports.createClient = async (req, res) => {
 
 exports.getAllClients = async (req, res) => {
     try {
-        const { search, sort, city } = req.query;
+        const { search, sort, city, district } = req.query;
         let where = {};
         let order = [['createdAt', 'DESC']];
         let addressWhere = {};
@@ -79,9 +79,14 @@ exports.getAllClients = async (req, res) => {
             addressWhere.city = city;
         }
 
+        if (district) {
+            addressWhere.district = district;
+        }
+
         if (sort === 'name_asc') order = [['name', 'ASC']];
         if (sort === 'name_desc') order = [['name', 'DESC']];
 
+        const hasAddressFilter = !!(city || district);
         try {
             const clients = await Client.findAll({
                 where,
@@ -89,8 +94,8 @@ exports.getAllClients = async (req, res) => {
                 include: [
                     {
                         model: Address,
-                        where: city ? addressWhere : undefined,
-                        required: !!city
+                        where: hasAddressFilter ? addressWhere : undefined,
+                        required: hasAddressFilter
                     },
                     { model: ClientPhone, as: 'additionalPhones' }
                 ]
@@ -124,6 +129,38 @@ exports.getDistinctCities = async (req, res) => {
             const sequelize = require('../config/database');
             const [results] = await sequelize.query('SELECT DISTINCT city FROM Addresses WHERE city IS NOT NULL ORDER BY city ASC');
             res.json(results.map(r => r.city).filter(Boolean));
+        } catch (e2) {
+            res.json([]);
+        }
+    }
+};
+
+exports.getDistinctDistricts = async (req, res) => {
+    try {
+        const { city } = req.query;
+        const where = { district: { [Op.ne]: null } };
+        if (city) where.city = city;
+
+        const addresses = await Address.findAll({
+            attributes: ['district'],
+            where,
+            group: ['district'],
+            order: [['district', 'ASC']],
+            raw: true
+        });
+        const districts = addresses.map(a => a.district).filter(Boolean);
+        res.json(districts);
+    } catch (error) {
+        console.error('[ClientController] ⚠️ getDistinctDistricts error:', error.message);
+        try {
+            const sequelize = require('../config/database');
+            const cityClause = req.query.city ? 'AND city = ?' : '';
+            const replacements = req.query.city ? [req.query.city] : [];
+            const [results] = await sequelize.query(
+                `SELECT DISTINCT district FROM Addresses WHERE district IS NOT NULL ${cityClause} ORDER BY district ASC`,
+                { replacements }
+            );
+            res.json(results.map(r => r.district).filter(Boolean));
         } catch (e2) {
             res.json([]);
         }

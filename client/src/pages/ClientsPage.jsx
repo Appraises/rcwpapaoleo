@@ -42,6 +42,8 @@ const ClientsPage = () => {
     const [loading, setLoading] = useState(true);
     const [cities, setCities] = useState([]);
     const [selectedCity, setSelectedCity] = useState('');
+    const [districts, setDistricts] = useState([]);
+    const [selectedDistrict, setSelectedDistrict] = useState('');
 
     const fetchCities = async () => {
         try {
@@ -52,10 +54,22 @@ const ClientsPage = () => {
         }
     };
 
+    const fetchDistricts = async (city) => {
+        try {
+            let url = '/clients/districts';
+            if (city) url += `?city=${encodeURIComponent(city)}`;
+            const res = await api.get(url);
+            setDistricts(res.data);
+        } catch (error) {
+            console.error('Error fetching districts:', error);
+        }
+    };
+
     const fetchClients = async () => {
         try {
             let url = `/clients?search=${search}`;
             if (selectedCity) url += `&city=${encodeURIComponent(selectedCity)}`;
+            if (selectedDistrict) url += `&district=${encodeURIComponent(selectedDistrict)}`;
             const response = await api.get(url);
             setClients(response.data);
         } catch (error) {
@@ -67,7 +81,14 @@ const ClientsPage = () => {
 
     useEffect(() => {
         fetchCities();
+        fetchDistricts();
     }, []);
+
+    // Refresh districts when city changes and reset selected district
+    useEffect(() => {
+        setSelectedDistrict('');
+        fetchDistricts(selectedCity);
+    }, [selectedCity]);
 
     useEffect(() => {
         setLoading(true);
@@ -76,7 +97,7 @@ const ClientsPage = () => {
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [search, selectedCity]);
+    }, [search, selectedCity, selectedDistrict]);
 
     const handleDelete = async (id) => {
         confirmToast('Tem certeza que deseja excluir este cliente?', async () => {
@@ -151,6 +172,29 @@ const ClientsPage = () => {
                         ))}
                     </select>
                 </div>
+                <div style={{ position: 'relative', minWidth: '200px' }}>
+                    <MapPin style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-light)', pointerEvents: 'none' }} size={18} />
+                    <select
+                        value={selectedDistrict}
+                        onChange={(e) => setSelectedDistrict(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '1rem 1rem 1rem 2.5rem',
+                            borderRadius: 'var(--border-radius)',
+                            border: '1px solid #ddd',
+                            fontSize: '1rem',
+                            boxShadow: 'var(--shadow-sm)',
+                            backgroundColor: 'white',
+                            appearance: 'auto',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <option value="">Todos os bairros</option>
+                        {districts.map(d => (
+                            <option key={d} value={d}>{d}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {loading ? (
@@ -161,13 +205,13 @@ const ClientsPage = () => {
                     backgroundColor: 'white', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-sm)'
                 }}>
                     <p style={{ fontSize: '1.1rem' }}>
-                        {search || selectedCity ? 'Nenhum cliente encontrado com esses filtros.' : 'Nenhum cliente cadastrado ainda.'}
+                        {search || selectedCity || selectedDistrict ? 'Nenhum cliente encontrado com esses filtros.' : 'Nenhum cliente cadastrado ainda.'}
                     </p>
                 </div>
             ) : (
                 <>
                     <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: '1rem' }}>
-                        {clients.length} cliente{clients.length !== 1 ? 's' : ''} {selectedCity ? `em ${selectedCity}` : ''}
+                        {clients.length} cliente{clients.length !== 1 ? 's' : ''} {selectedCity ? `em ${selectedCity}` : ''}{selectedDistrict ? ` — ${selectedDistrict}` : ''}
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                         {clients.map(client => (

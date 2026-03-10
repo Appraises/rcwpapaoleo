@@ -140,13 +140,11 @@ async function dispatchDailyRoutes() {
         const baseName = await getSetting('base_name', 'Base da Empresa');
         const primaryCollectorId = await getSetting('dispatch_primary_collector_id', null);
         const secondaryCollectorId = await getSetting('dispatch_secondary_collector_id', null);
-        const splitThreshold = parseInt(await getSetting('dispatch_split_threshold', '15'), 10);
 
         const base = { lat: baseLat, lng: baseLng };
         console.log(`[DispatchService] 🏠 Base: ${baseName} (${baseLat}, ${baseLng})`);
-        console.log(`[DispatchService] 📊 Split threshold: ${splitThreshold}`);
 
-        // 5. Get collector(s)
+        // 5. Get both collectors (ALWAYS required)
         const primaryCollector = primaryCollectorId
             ? await User.findByPk(primaryCollectorId)
             : await User.findOne({ where: { isCollector: true, phone: { [Op.ne]: null } } });
@@ -180,79 +178,83 @@ async function dispatchDailyRoutes() {
             };
         });
 
-        // 7. Decide single or dual dispatch
-        const needsSplit = validRequests.length > splitThreshold && secondaryCollectorId;
+        // 7. ALWAYS split into two geographic blocks
+        //    Exception: if only 1 request, send to primary only (can't split 1)
+        if (validRequests.length === 1) {
+            // ── SINGLE REQUEST — send to primary collector only ──
+            console.log('[DispatchService] 📍 Only 1 request — sending to primary collector only.');
+            const route = RouteService.optimizeRoute(base, allClientCoords);
+            const orderedCoords = route.orderedIndices.map(i => allClientCoords[i]);
+            const orderedDetails = route.orderedIndices.map(i => allClientDetails[i]);
+            const mapsUrl = buildGoogleMapsUrl(base, orderedCoords);
+            const wazeUrl = buildWazeUrl(orderedCoords[0]);
+            const singleMsg = formatDispatchMessage(primaryCollector.name, orderedCoords, orderedDetails, route.totalDistanceKm, mapsUrl, wazeUrl);
 
-        if (needsSplit) {
-            // ── DUAL COLLECTOR MODE ──────────────────────────────────
-            console.log(`[DispatchService] 🔀 Splitting ${validRequests.length} requests into 2 groups (threshold: ${splitThreshold})`);
+            console.log(`[DispatchService] 📤 Sending single route (1 stop, ${route.totalDistanceKm.toFixed(1)}km) to ${primaryCollector.name}...`);
+            const remoteJid = `${EvolutionService._formatPhone(primaryCollector.phone)}@s.whatsapp.net`;
+            await EvolutionService.simulateTypingAndSend(primaryCollector.phone, singleMsg, remoteJid);
 
-            const secondaryCollector = await User.findByPk(secondaryCollectorId);
-            if (!secondaryCollector || !secondaryCollector.phone) {
-                console.warn('[DispatchService] ⚠️ Secondary collector not found or has no phone. Falling back to single dispatch.');
-            } else {
-                console.log(`[DispatchService] 👤 Secondary collector: ${secondaryCollector.name} (${secondaryCollector.phone})`);
+            await markDispatchedWithOrder(validRequests, null, route.orderedIndices);
 
-                const [groupAIndices, groupBIndices] = RouteService.splitIntoTwoGroups(allClientCoords);
-
-                // Route A (Primary)
-                const routeA = RouteService.optimizeRoute(base, groupAIndices.map(i => allClientCoords[i]));
-                const orderedCoordsA = routeA.orderedIndices.map(i => allClientCoords[groupAIndices[i]]);
-                const orderedDetailsA = routeA.orderedIndices.map(i => allClientDetails[groupAIndices[i]]);
-                const mapsUrlA = buildGoogleMapsUrl(base, orderedCoordsA);
-                const wazeUrlA = buildWazeUrl(orderedCoordsA[0]);
-                const msgA = formatDispatchMessage(primaryCollector.name, orderedCoordsA, orderedDetailsA, routeA.totalDistanceKm, mapsUrlA, wazeUrlA);
-
-                console.log(`[DispatchService] 📤 Sending Route A (${groupAIndices.length} stops, ${routeA.totalDistanceKm.toFixed(1)}km) to ${primaryCollector.name}...`);
-                const remoteJidA = `${EvolutionService._formatPhone(primaryCollector.phone)}@s.whatsapp.net`;
-                await EvolutionService.simulateTypingAndSend(primaryCollector.phone, msgA, remoteJidA);
-
-                // Route B (Secondary)
-                const routeB = RouteService.optimizeRoute(base, groupBIndices.map(i => allClientCoords[i]));
-                const orderedCoordsB = routeB.orderedIndices.map(i => allClientCoords[groupBIndices[i]]);
-                const orderedDetailsB = routeB.orderedIndices.map(i => allClientDetails[groupBIndices[i]]);
-                const mapsUrlB = buildGoogleMapsUrl(base, orderedCoordsB);
-                const wazeUrlB = buildWazeUrl(orderedCoordsB[0]);
-                const msgB = formatDispatchMessage(secondaryCollector.name, orderedCoordsB, orderedDetailsB, routeB.totalDistanceKm, mapsUrlB, wazeUrlB);
-
-                console.log(`[DispatchService] 📤 Sending Route B (${groupBIndices.length} stops, ${routeB.totalDistanceKm.toFixed(1)}km) to ${secondaryCollector.name}...`);
-                const remoteJidB = `${EvolutionService._formatPhone(secondaryCollector.phone)}@s.whatsapp.net`;
-                await EvolutionService.simulateTypingAndSend(secondaryCollector.phone, msgB, remoteJidB);
-
-                // Save dispatchOrder and mark as DISPATCHED for both groups
-                await markDispatchedWithOrder(validRequests, groupAIndices, routeA.orderedIndices);
-                await markDispatchedWithOrder(validRequests, groupBIndices, routeB.orderedIndices);
-
-                console.log('[DispatchService] ✅ Dual dispatch completed successfully!');
-                return {
-                    dispatched: true,
-                    mode: 'dual',
-                    routeA: { collector: primaryCollector.name, stops: groupAIndices.length, distanceKm: routeA.totalDistanceKm },
-                    routeB: { collector: secondaryCollector.name, stops: groupBIndices.length, distanceKm: routeB.totalDistanceKm }
-                };
-            }
+            console.log('[DispatchService] ✅ Single dispatch completed successfully!');
+            return {
+                dispatched: true,
+                mode: 'single',
+                route: { collector: primaryCollector.name, stops: 1, distanceKm: route.totalDistanceKm }
+            };
         }
 
-        // ── SINGLE COLLECTOR MODE ────────────────────────────────
-        const route = RouteService.optimizeRoute(base, allClientCoords);
-        const orderedCoords = route.orderedIndices.map(i => allClientCoords[i]);
-        const orderedDetails = route.orderedIndices.map(i => allClientDetails[i]);
-        const mapsUrl = buildGoogleMapsUrl(base, orderedCoords);
-        const wazeUrl = buildWazeUrl(orderedCoords[0]);
-        const msg = formatDispatchMessage(primaryCollector.name, orderedCoords, orderedDetails, route.totalDistanceKm, mapsUrl, wazeUrl);
+        // ── DUAL COLLECTOR MODE (ALWAYS for 2+ requests) ──────────
+        const secondaryCollector = secondaryCollectorId
+            ? await User.findByPk(secondaryCollectorId)
+            : null;
 
-        console.log(`[DispatchService] 📤 Sending single route (${validRequests.length} stops, ${route.totalDistanceKm.toFixed(1)}km) to ${primaryCollector.name}...`);
-        const remoteJid = `${EvolutionService._formatPhone(primaryCollector.phone)}@s.whatsapp.net`;
-        await EvolutionService.simulateTypingAndSend(primaryCollector.phone, msg, remoteJid);
+        if (!secondaryCollector || !secondaryCollector.phone) {
+            console.error('[DispatchService] ❌ Secondary collector not configured or has no phone. Both collectors are required. Aborting.');
+            return { dispatched: false, reason: 'Secondary collector not configured — both collectors are required' };
+        }
 
-        // Save dispatchOrder and mark as DISPATCHED
-        await markDispatchedWithOrder(validRequests, null, route.orderedIndices);
+        console.log(`[DispatchService] 👤 Secondary collector: ${secondaryCollector.name} (${secondaryCollector.phone})`);
+        console.log(`[DispatchService] 🔀 Splitting ${validRequests.length} requests into 2 geographic blocks...`);
 
-        console.log('[DispatchService] ✅ Single dispatch completed successfully!');
+        const [groupAIndices, groupBIndices] = RouteService.splitIntoTwoGroups(allClientCoords);
+
+        console.log(`[DispatchService] 📦 Block A: ${groupAIndices.length} stops | Block B: ${groupBIndices.length} stops`);
+
+        // Route A (Primary collector)
+        const routeA = RouteService.optimizeRoute(base, groupAIndices.map(i => allClientCoords[i]));
+        const orderedCoordsA = routeA.orderedIndices.map(i => allClientCoords[groupAIndices[i]]);
+        const orderedDetailsA = routeA.orderedIndices.map(i => allClientDetails[groupAIndices[i]]);
+        const mapsUrlA = buildGoogleMapsUrl(base, orderedCoordsA);
+        const wazeUrlA = buildWazeUrl(orderedCoordsA[0]);
+        const msgA = formatDispatchMessage(primaryCollector.name, orderedCoordsA, orderedDetailsA, routeA.totalDistanceKm, mapsUrlA, wazeUrlA);
+
+        console.log(`[DispatchService] 📤 Sending Block A (${groupAIndices.length} stops, ${routeA.totalDistanceKm.toFixed(1)}km) to ${primaryCollector.name}...`);
+        const remoteJidA = `${EvolutionService._formatPhone(primaryCollector.phone)}@s.whatsapp.net`;
+        await EvolutionService.simulateTypingAndSend(primaryCollector.phone, msgA, remoteJidA);
+
+        // Route B (Secondary collector)
+        const routeB = RouteService.optimizeRoute(base, groupBIndices.map(i => allClientCoords[i]));
+        const orderedCoordsB = routeB.orderedIndices.map(i => allClientCoords[groupBIndices[i]]);
+        const orderedDetailsB = routeB.orderedIndices.map(i => allClientDetails[groupBIndices[i]]);
+        const mapsUrlB = buildGoogleMapsUrl(base, orderedCoordsB);
+        const wazeUrlB = buildWazeUrl(orderedCoordsB[0]);
+        const msgB = formatDispatchMessage(secondaryCollector.name, orderedCoordsB, orderedDetailsB, routeB.totalDistanceKm, mapsUrlB, wazeUrlB);
+
+        console.log(`[DispatchService] 📤 Sending Block B (${groupBIndices.length} stops, ${routeB.totalDistanceKm.toFixed(1)}km) to ${secondaryCollector.name}...`);
+        const remoteJidB = `${EvolutionService._formatPhone(secondaryCollector.phone)}@s.whatsapp.net`;
+        await EvolutionService.simulateTypingAndSend(secondaryCollector.phone, msgB, remoteJidB);
+
+        // Save dispatchOrder and mark as DISPATCHED for both groups
+        await markDispatchedWithOrder(validRequests, groupAIndices, routeA.orderedIndices);
+        await markDispatchedWithOrder(validRequests, groupBIndices, routeB.orderedIndices);
+
+        console.log('[DispatchService] ✅ Dual dispatch completed successfully!');
         return {
             dispatched: true,
-            mode: 'single',
-            route: { collector: primaryCollector.name, stops: validRequests.length, distanceKm: route.totalDistanceKm }
+            mode: 'dual',
+            routeA: { collector: primaryCollector.name, stops: groupAIndices.length, distanceKm: routeA.totalDistanceKm },
+            routeB: { collector: secondaryCollector.name, stops: groupBIndices.length, distanceKm: routeB.totalDistanceKm }
         };
 
     } catch (error) {

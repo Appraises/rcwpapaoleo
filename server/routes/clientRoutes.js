@@ -6,6 +6,7 @@ const collectionController = require('../controllers/CollectionController');
 router.post('/', clientController.createClient);
 router.get('/', clientController.getAllClients);
 router.get('/cities', clientController.getDistinctCities);
+router.get('/districts', clientController.getDistinctDistricts);
 router.get('/:id', clientController.getClientById);
 router.put('/:id', clientController.updateClient);
 router.delete('/:id', clientController.deleteClient);
