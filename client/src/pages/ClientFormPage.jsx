@@ -119,6 +119,7 @@ const ClientFormPage = () => {
     const [docError, setDocError] = useState('');
     const [geocoding, setGeocoding] = useState(false);
     const [cepLoading, setCepLoading] = useState(false);
+    const [cnpjLoading, setCnpjLoading] = useState(false);
     const [cities, setCities] = useState([]);
     const [citiesLoading, setCitiesLoading] = useState(false);
 
@@ -143,6 +144,46 @@ const ClientFormPage = () => {
             console.error('Geocoding error:', error);
         } finally {
             setGeocoding(false);
+        }
+    };
+
+    // --- BrasilAPI CNPJ lookup ---
+    const handleCnpjLookup = async (rawCnpj) => {
+        if (rawCnpj.length !== 14 || !isValidCNPJ(rawCnpj)) return;
+
+        setCnpjLoading(true);
+        try {
+            const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${rawCnpj}`);
+            if (!response.ok) return;
+            const data = await response.json();
+
+            // Helper: capitalize "BRASILIA" -> "Brasilia"
+            const capitalize = (str) => {
+                if (!str) return '';
+                return str.toLowerCase().replace(/(^|\s)\S/g, l => l.toUpperCase());
+            };
+
+            // Build logradouro with tipo (e.g. "Rua XV de Novembro")
+            const logradouro = [data.descricao_tipo_de_logradouro, data.logradouro]
+                .filter(Boolean)
+                .map(s => capitalize(s))
+                .join(' ');
+
+            setFormData(prev => ({
+                ...prev,
+                name: prev.name || data.razao_social || '',
+                tradeName: prev.tradeName || data.nome_fantasia || '',
+                zip: prev.zip || (data.cep ? formatCep(data.cep) : ''),
+                street: prev.street || logradouro,
+                number: prev.number || (data.numero && data.numero !== 'SN' ? data.numero : ''),
+                district: prev.district || capitalize(data.bairro || ''),
+                city: prev.city || capitalize(data.municipio || ''),
+                state: prev.state || data.uf || ''
+            }));
+        } catch (error) {
+            console.error('BrasilAPI CNPJ Error:', error);
+        } finally {
+            setCnpjLoading(false);
         }
     };
 
@@ -255,7 +296,13 @@ const ClientFormPage = () => {
                 value = value.replace(/(\d{4})(\d)/, '$1-$2');
                 if (value.length > 18) value = value.substring(0, 18);
                 if (value.length === 18) {
-                    if (!isValidCNPJ(value.replace(/\D/g, ''))) setDocError('CNPJ inválido'); else setDocError('');
+                    const rawCnpj = value.replace(/\D/g, '');
+                    if (!isValidCNPJ(rawCnpj)) {
+                        setDocError('CNPJ inválido');
+                    } else {
+                        setDocError('');
+                        handleCnpjLookup(rawCnpj);
+                    }
                 } else {
                     setDocError('');
                 }
@@ -384,6 +431,7 @@ const ClientFormPage = () => {
                                 style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: docError ? '1px solid var(--color-error)' : '1px solid #ddd' }}
                             />
                             {docError && <span style={{ color: 'var(--color-error)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{docError}</span>}
+                            {cnpjLoading && <span style={{ color: '#2563eb', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>🔍 Buscando dados do CNPJ...</span>}
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Telefone Principal (WhatsApp)*</label>
