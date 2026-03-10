@@ -25,8 +25,10 @@ exports.createClient = async (req, res) => {
 
         const fullAddressLegacy = `${street}, ${number} - ${district}, ${city} - ${state}`;
 
+        const cleanDocument = (document || '').toString().trim() || null;
+
         const client = await Client.create({
-            name, tradeName, document: document || null, phone,
+            name, tradeName, document: cleanDocument, phone,
             address: fullAddressLegacy,
             pricePerLiter, averageOilLiters, observations,
             has25L, has50L, has100L, has200L, recurrenceDays
@@ -230,7 +232,9 @@ exports.updateClient = async (req, res) => {
 
         const fullAddress = address || (street ? `${street}, ${number} - ${district}, ${city} - ${state}` : client.address);
 
-        await client.update({ name, tradeName, document: document || null, phone, address: fullAddress, pricePerLiter, averageOilLiters, observations, has25L, has50L, has100L, has200L, recurrenceDays });
+        const cleanDocument = (document || '').toString().trim() || null;
+
+        await client.update({ name, tradeName, document: cleanDocument, phone, address: fullAddress, pricePerLiter, averageOilLiters, observations, has25L, has50L, has100L, has200L, recurrenceDays });
 
         // Update or create Address safely (to prevent duplicate rows if include failed)
         try {
