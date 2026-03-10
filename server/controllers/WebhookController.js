@@ -131,7 +131,7 @@ exports.handleEvolutionWebhook = async (req, res) => {
                 console.log(`[Webhook] ❌ No matching client or collector found for number: ${rawNumber}`);
 
                 // Envia uma mensagem amigável para qualquer número não cadastrado
-                const fallbackMessage = `Olá! ♻️ Bem-vindo(a) à *CatÓleo*!\n\nRecebemos sua mensagem, mas este número de telefone ainda não foi localizado em nosso sistema de coletas.\n\nSe você já é nosso parceiro, verifique se está falando do mesmo número cadastrado. Caso contrário, aguarde um momento e nossa equipe de atendimento falará com você! 🌱`;
+                const fallbackMessage = `Olá! ♻️ Bem-vindo(a) à *RCW Papa Óleo*!\n\nRecebemos sua mensagem, mas este número de telefone ainda não foi localizado em nosso sistema de coletas.\n\nSe você já é nosso parceiro, verifique se está falando do mesmo número cadastrado. Caso contrário, aguarde um momento e nossa equipe de atendimento falará com você! 🌱`;
 
                 try {
                     console.log(`[Webhook] ℹ️ Sending unregistered fallback message to ${remoteJid}`);
