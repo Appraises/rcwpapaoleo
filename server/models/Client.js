@@ -79,7 +79,7 @@ const Client = sequelize.define('Client', {
         comment: 'Interval in days between expected collections'
     },
     lastReminderDate: {
-        type: DataTypes.DATEONLY,
+        type: DataTypes.DATE,
         allowNull: true,
         comment: 'Date when the last churn memory was sent'
     }

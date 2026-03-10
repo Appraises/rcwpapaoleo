@@ -69,15 +69,27 @@ class QueueService {
         try {
             console.log(`[QueueService] Processing message from client ${task.clientId}...`);
 
-            // 1. LLM intent check
-            const isCollectionRequest = await LlmService.checkCollectionIntent(task.messageText);
+            // 1. Fetch Client to check churn context
+            const client = await Client.findByPk(task.clientId);
+            if (!client) {
+                console.error(`[QueueService] ❌ Client ${task.clientId} not found in DB`);
+                return;
+            }
+
+            let isReplyingToChurn = false;
+            if (client.lastReminderDate) {
+                const lastReminder = new Date(client.lastReminderDate);
+                const hoursSinceReminder = (new Date() - lastReminder) / (1000 * 60 * 60);
+                if (hoursSinceReminder <= 24) {
+                    isReplyingToChurn = true;
+                    console.log(`[QueueService] ⏰ Client ${task.clientId} is replying within 24h of a churn reminder (Context active).`);
+                }
+            }
+
+            // 2. LLM intent check with context
+            const isCollectionRequest = await LlmService.checkCollectionIntent(task.messageText, isReplyingToChurn);
 
             if (isCollectionRequest) {
-                const client = await Client.findByPk(task.clientId);
-                if (!client) {
-                    console.error(`[QueueService] ❌ Client ${task.clientId} not found in DB`);
-                    return;
-                }
 
                 // 2. Check for existing PENDING or DISPATCHED requests for this client
                 const existingRequest = await CollectionRequest.findOne({

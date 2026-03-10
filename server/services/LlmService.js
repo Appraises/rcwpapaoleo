@@ -2,14 +2,14 @@
 // Handles communication with the local Ollama API
 
 class LlmService {
-    static async checkCollectionIntent(messageText) {
+    static async checkCollectionIntent(messageText, isReplyingToChurn = false) {
         try {
             // Remove special characters, keep only alphanumerics and basic punctuation
             const cleanMessage = messageText.replace(/[^\w\s.,?!]/gi, '').trim();
 
             if (!cleanMessage) return false;
 
-            const prompt = `Você é um assistente de triagem da empresa RCW Papa Óleo (que recolhe óleo de cozinha usado).
+            let prompt = `Você é um assistente de triagem da empresa RCW Papa Óleo (que recolhe óleo de cozinha usado).
 O cliente está enviando mensagem para o número da empresa. Por causa desse contexto, ele muitas vezes NÃO VAI escrever a palavra "óleo" ou "bombona". Ele pode apenas dizer "pode vir buscar" ou "passa aqui".
 Sua função é identificar se a mensagem é um pedido de coleta. Considere também erros de português e gírias.
 
@@ -39,9 +39,25 @@ Exemplos de NAO:
 "qual o valor do óleo?" -> NAO
 "vocês vendem bombona?" -> NAO
 "obrigado" -> NAO
-"ok, fico no aguardo" -> NAO
+"ok, fico no aguardo" -> NAO`;
 
-Mensagem do cliente: "${cleanMessage}"
+            if (isReplyingToChurn) {
+                prompt += `\n\nATENÇÃO OBRIGATÓRIA: O cliente ACABOU DE RECEBER uma mensagem do robô perguntando: "Percebemos que faz tempo da última coleta, querem agendar? Responda SIM".
+Portanto, as seguintes respostas curtas TAMBÉM SÃO um pedido de coleta válido:
+"sim" -> SIM
+"s" -> SIM
+"quero" -> SIM
+"pode mandar" -> SIM
+"ok" -> SIM
+"pode" -> SIM`;
+            } else {
+                prompt += `\n\nATENÇÃO OBRIGATÓRIA: Respostas curtas soltas como "sim", "s", "ok", "quero", "pode" SEM contexto NÃO DEVEM ser consideradas pedido de coleta, a menos que especifiquem a coleta.
+"sim" -> NAO
+"ok" -> NAO
+"quero" -> NAO`;
+            }
+
+            prompt += `\n\nMensagem do cliente: "${cleanMessage}"
 Responda APENAS com a palavra SIM ou NAO. Nenhuma pontuação, justificativa ou explicação extra.`;
 
             const response = await fetch('http://localhost:11434/api/generate', {
