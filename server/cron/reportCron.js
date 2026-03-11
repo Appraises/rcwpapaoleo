@@ -4,6 +4,8 @@ const fs = require('fs');
 const ReportService = require('../services/ReportService');
 const { dispatchDailyRoutes } = require('../services/DispatchService');
 const { backupDatabase } = require('../services/BackupService');
+const { initDynamicDispatchCron } = require('./dynamicDispatchCron');
+const { initConsolidatedListCron } = require('./consolidatedListCron');
 
 const initCronJobs = () => {
     // === DAILY DISPATCH CRON JOB ===
@@ -81,8 +83,10 @@ const initCronJobs = () => {
     });
 
     initChurnCron();
+    initDynamicDispatchCron();
+    initConsolidatedListCron();
 
-    console.log('[CRON] Report, dispatch, backup, and churn scheduled tasks initialized.');
+    console.log('[CRON] Report, dispatch, backup, churn, ad-hoc, and consolidated list tasks initialized.');
 };
 
 module.exports = initCronJobs;

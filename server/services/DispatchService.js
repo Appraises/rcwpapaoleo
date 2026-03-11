@@ -195,7 +195,7 @@ async function dispatchDailyRoutes() {
             const remoteJid = `${EvolutionService._formatPhone(primaryCollector.phone)}@s.whatsapp.net`;
             await EvolutionService.simulateTypingAndSend(primaryCollector.phone, singleMsg, remoteJid);
 
-            await markDispatchedWithOrder(validRequests, null, route.orderedIndices);
+            await markDispatchedWithOrder(validRequests, null, route.orderedIndices, primaryCollector.id);
 
             // Trigger progressive notifications for clients
             DispatchNotifierService.startNotificationQueue(orderedDetails);
@@ -249,9 +249,9 @@ async function dispatchDailyRoutes() {
         const remoteJidB = `${EvolutionService._formatPhone(secondaryCollector.phone)}@s.whatsapp.net`;
         await EvolutionService.simulateTypingAndSend(secondaryCollector.phone, msgB, remoteJidB);
 
-        // Save dispatchOrder and mark as DISPATCHED for both groups
-        await markDispatchedWithOrder(validRequests, groupAIndices, routeA.orderedIndices);
-        await markDispatchedWithOrder(validRequests, groupBIndices, routeB.orderedIndices);
+        // Save dispatchOrder, mark as DISPATCHED, and assign collectorId for both groups
+        await markDispatchedWithOrder(validRequests, groupAIndices, routeA.orderedIndices, primaryCollector.id);
+        await markDispatchedWithOrder(validRequests, groupBIndices, routeB.orderedIndices, secondaryCollector.id);
 
         // Trigger progressive notifications for clients in BOTH routes
         DispatchNotifierService.startNotificationQueue(orderedDetailsA);
@@ -272,20 +272,163 @@ async function dispatchDailyRoutes() {
 }
 
 /**
- * Marks collection requests as DISPATCHED and saves the dispatchOrder.
+ * Marks collection requests as DISPATCHED and saves the dispatchOrder and assignedTo.
  */
-async function markDispatchedWithOrder(allRequests, groupIndices, orderedIndices) {
+async function markDispatchedWithOrder(allRequests, groupIndices, orderedIndices, collectorId) {
     for (let i = 0; i < orderedIndices.length; i++) {
         const originalIndex = groupIndices
             ? groupIndices[orderedIndices[i]]
             : orderedIndices[i];
         await allRequests[originalIndex].update({
             status: 'DISPATCHED',
-            dispatchOrder: i + 1
+            dispatchOrder: i + 1,
+            assignedTo: collectorId
         });
     }
     const count = orderedIndices.length;
     console.log(`[DispatchService] 📝 Marked ${count} request(s) as DISPATCHED with dispatchOrder`);
 }
 
-module.exports = { dispatchDailyRoutes };
+// ─── Ad-Hoc Dynamic Dispatch Logic ────────────────────────────────────
+
+/**
+ * Processes newly created PENDING requests during business hours.
+ * Assigns them to the nearest collector based on their last 3 known destination stops.
+ */
+async function dispatchAdHocUpdates(pendingRequests) {
+    if (!pendingRequests || pendingRequests.length === 0) return;
+
+    console.log(`[DispatchService] 🔄 Ad-Hoc: Evaluating ${pendingRequests.length} new requests...`);
+
+    const primaryCollectorId = await getSetting('dispatch_primary_collector_id', null);
+    const secondaryCollectorId = await getSetting('dispatch_secondary_collector_id', null);
+
+    // Filter available collectors
+    let availableCollectors = [];
+    if (primaryCollectorId) {
+        const p = await User.findByPk(primaryCollectorId);
+        if (p && p.phone) availableCollectors.push(p);
+    }
+    if (secondaryCollectorId) {
+        const s = await User.findByPk(secondaryCollectorId);
+        if (s && s.phone) availableCollectors.push(s);
+    }
+
+    if (availableCollectors.length === 0) {
+        console.log('[DispatchService] ❌ Ad-Hoc: No active collectors found with phones.');
+        return;
+    }
+
+    // Load active paths for today
+    // To calculate proximity, we get each collector's last 3 dispatched endpoints 
+    const collectorEndpoints = {};
+    for (const coll of availableCollectors) {
+        const lastStops = await CollectionRequest.findAll({
+            where: { status: 'DISPATCHED', assignedTo: coll.id },
+            order: [['dispatchOrder', 'DESC']],
+            limit: 3,
+            include: [{
+                model: Client,
+                include: [{ model: Address }]
+            }]
+        });
+        
+        collectorEndpoints[coll.id] = lastStops.map(req => {
+            const client = req.Client;
+            return {
+                lat: client.Address?.latitude || client.latitude,
+                lng: client.Address?.longitude || client.longitude,
+                dispatchOrder: req.dispatchOrder
+            };
+        }).filter(c => c.lat && c.lng);
+    }
+
+    let roundRobinIndex = 0;
+    const adHocClients = [];
+
+    for (const req of pendingRequests) {
+        const client = req.Client;
+        if (!client) continue;
+
+        const reqLat = client.Address?.latitude || client.latitude;
+        const reqLng = client.Address?.longitude || client.longitude;
+
+        if (!reqLat || !reqLng) {
+            console.log(`[DispatchService] ⚠️ Ad-Hoc: Skipping un-geocoded client ${client.name}.`);
+            continue;
+        }
+
+        let chosenCollector = null;
+        let closestDistance = Infinity;
+        let matchedOrderNum = null;
+
+        // Find the collector with a recent end-stop closest to this new request
+        for (const coll of availableCollectors) {
+            const endpoints = collectorEndpoints[coll.id] || [];
+            for (const ep of endpoints) {
+                const dist = RouteService.calculateDistance(reqLat, reqLng, ep.lat, ep.lng);
+                // Within 3km threshold
+                if (dist < 3.0 && dist < closestDistance) {
+                    closestDistance = dist;
+                    chosenCollector = coll;
+                    matchedOrderNum = ep.dispatchOrder;
+                }
+            }
+        }
+
+        // Fallback: Round-Robin if no proximity advantage
+        if (!chosenCollector) {
+            chosenCollector = availableCollectors[roundRobinIndex % availableCollectors.length];
+            roundRobinIndex++;
+        }
+
+        console.log(`[DispatchService] 🎯 Ad-Hoc: Assigned "${client.name}" to ${chosenCollector.name} (Dist: ${closestDistance !== Infinity ? closestDistance.toFixed(2)+'km' : 'Round-Robin'})`);
+
+        // Find max dispatch order to append to the end of their list safely
+        const maxOrderReq = await CollectionRequest.findOne({
+            where: { status: 'DISPATCHED', assignedTo: chosenCollector.id },
+            order: [['dispatchOrder', 'DESC']]
+        });
+        const nextOrder = maxOrderReq ? maxOrderReq.dispatchOrder + 1 : 1;
+
+        // Update request immediately
+        await req.update({
+            status: 'DISPATCHED',
+            dispatchOrder: nextOrder,
+            assignedTo: chosenCollector.id
+        });
+
+        adHocClients.push(client);
+
+        // Notify the collector
+        // Ex: "Dica: Fica perto da sua parada original #X. Se ainda estiver perto, passe lá."
+        const addrStr = [client.Address?.street || client.street, client.Address?.number || client.number].filter(Boolean).join(', ');
+        const districtStr = client.Address?.district || client.district;
+        const finalAddr = districtStr ? `${addrStr} — ${districtStr}` : addrStr;
+        
+        const googleUrl = `https://www.google.com/maps/search/?api=1&query=${reqLat},${reqLng}`;
+        const wazeUrl = buildWazeUrl({ lat: reqLat, lng: reqLng });
+
+        const collectorMsgBase = msg.dispatchAdHoc?.collectorAlert || 
+            ((cName, cAddr, maps, waze, hint) => `*NOVA COLETA EXTRA ADICIONADA!* 🚨\n\n${cName}\n📍 ${cAddr}\n\n${hint}\n\nGoogle Maps:\n${maps}\n\nWaze:\n${waze}`);
+        
+        let hint = 'Foi adicionada ao final da sua lista.';
+        if (matchedOrderNum) {
+            hint = `💡 *Dica:* Fica a ${closestDistance.toFixed(1)}km da sua parada original #${matchedOrderNum}. Se ainda estiver perto dessa região, considere passar lá!`;
+        }
+
+        const collectorMsg = typeof collectorMsgBase === 'function' 
+            ? collectorMsgBase(client.name, finalAddr, googleUrl, wazeUrl, hint)
+            : collectorMsgBase;
+            
+        const remoteJid = `${EvolutionService._formatPhone(chosenCollector.phone)}@s.whatsapp.net`;
+        await EvolutionService.simulateTypingAndSend(chosenCollector.phone, collectorMsg, remoteJid);
+    }
+
+    // Put clients in the anti-spam queue to be notified they got included!
+    if (adHocClients.length > 0) {
+        DispatchNotifierService.startAdHocClientNotificationQueue(adHocClients);
+    }
+}
+
+module.exports = { dispatchDailyRoutes, dispatchAdHocUpdates };

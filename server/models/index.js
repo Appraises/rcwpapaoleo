@@ -26,6 +26,9 @@ Collection.belongsTo(User, { foreignKey: 'userId' });
 Client.hasMany(CollectionRequest, { foreignKey: 'clientId', onDelete: 'CASCADE' });
 CollectionRequest.belongsTo(Client, { foreignKey: 'clientId' });
 
+User.hasMany(CollectionRequest, { foreignKey: 'assignedTo', onDelete: 'SET NULL', as: 'assignedRequests' });
+CollectionRequest.belongsTo(User, { foreignKey: 'assignedTo', as: 'collector' });
+
 // Sales Associations
 Buyer.hasMany(Sale, { foreignKey: 'buyerId', onDelete: 'CASCADE' });
 Sale.belongsTo(Buyer, { foreignKey: 'buyerId' });

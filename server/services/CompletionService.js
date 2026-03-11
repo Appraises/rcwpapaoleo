@@ -54,7 +54,7 @@ async function processCompletionMessage(collectorUserId, messageText, remoteJid,
 
         // 2. Fetch all DISPATCHED requests with Client data
         const dispatchedRequests = await CollectionRequest.findAll({
-            where: { status: 'DISPATCHED' },
+            where: { status: 'DISPATCHED', assignedTo: collector.id },
             include: [{
                 model: Client,
                 attributes: ['name', 'street', 'number', 'district', 'averageOilLiters'],

@@ -157,6 +157,26 @@ const unfinishedRouteReminders = [
     (name) => `Oi, ${name}! 🌱\n\nPassando para avisar que não tivemos tempo hábil de concluir todas as coletas de hoje, incluindo a sua. Pedimos sinceras desculpas pelo atraso! 😕\n\nSua coleta tá anotada no topo da nossa lista pra próxima rota. Muito obrigado por guardar o óleo com a gente! ♻️`
 ];
 
+// ─── Ad-Hoc Dynamic Dispatch ──────────────────────────────────────────
+
+const adHocClientAlerts = [
+    (name) => `Oi, ${name}! Tudo bem?\n\nNossa equipe já está com a rota do dia na rua e conseguimos incluir você como uma coleta bônus pra hoje! ✨\n\nDeixa o óleo preparado que daqui a pouco passaremos aí. ♻️💚`,
+    (name) => `Boa notícia, ${name}! 🥳\n\nNossa rota já estava fechada, mas demos um jeito e encaixamos o seu pedido no roteiro de hoje. O coletador já foi avisado e logo logo deve colar por aí. Valeu! 🚛`,
+    (name) => `Olá, ${name}! 🛢️\n\nDeu match! Conseguimos incluir sua coleta agora mesmo na nossa rota atual. Podes ir deixando tudo no jeito. A natureza agradece! 🌱`
+];
+
+const adHocCollectorAlerts = [
+    (cName, cAddr, maps, waze, hint) => `*NOVA COLETA EXTRA ADICIONADA!* 🚨\n\n📍 *${cName}*\n${cAddr}\n\n${hint}\n\nGoogle Maps:\n${maps}\n\nWaze:\n${waze}`,
+    (cName, cAddr, maps, waze, hint) => `*📦 COLETA BÔNUS ENCAIXADA!* \n\n📍 *${cName}*\n${cAddr}\n\n${hint}\n\n🗺️ Google Maps:\n${maps}\n\n🚙 Waze:\n${waze}`,
+];
+
+// ─── Relatório Consolidado ────────────────────────────────────────────
+
+const consolidatedReportHeaders = [
+    (date) => `📋 *Lista Consolidada Final — ${date}*\n\nAqui estão todas as suas coletas de hoje na ordem correta (Matinais + Adicionais). \n\nNo fim do dia, responda com "coletei até o X" se baseando nessa lista:\n`,
+    (date) => `📝 *Resumo de Bordo — ${date}*\n\nEssa é a sua lista combinada com todos os encaixes de hoje.\n\nDepois avise: "coletei até o nr X" olhando daqui:\n`,
+];
+
 // ─── Exports ──────────────────────────────────────────────────────────
 
 module.exports = {
@@ -189,5 +209,12 @@ module.exports = {
     },
     dispatchReminder: {
         notification: (name) => pick(dispatchReminders)(name),
+    },
+    dispatchAdHoc: {
+        clientAlert: (name) => pick(adHocClientAlerts)(name),
+        collectorAlert: (cName, cAddr, maps, waze, hint) => pick(adHocCollectorAlerts)(cName, cAddr, maps, waze, hint),
+    },
+    consolidatedList: {
+        header: (date) => pick(consolidatedReportHeaders)(date),
     }
 };

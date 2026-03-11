@@ -18,6 +18,10 @@ const CollectionRequest = sequelize.define('CollectionRequest', {
         defaultValue: 'PENDING',
         allowNull: false,
     },
+    assignedTo: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
     message: {
         type: DataTypes.TEXT,
         allowNull: true,

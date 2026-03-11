@@ -80,6 +80,60 @@ class DispatchNotifierService {
             clientIndex++;
         }
     }
+
+    /**
+     * Queues an ad-hoc list of clients for notification (when added dynamically mid-day)
+     * Follows the base 25s anti-spam progressive delay without splitting them into 40-min chunks.
+     * @param {Array} adHocClients - Array of Client models
+     */
+    static startAdHocClientNotificationQueue(adHocClients) {
+        if (!adHocClients || adHocClients.length === 0) return;
+
+        console.log(`[DispatchNotifier] 📡 Starting Ad-Hoc notification queue for ${adHocClients.length} clients.`);
+        
+        // Execute immediately (it handles the delays internally)
+        this.notifyAdHocChunk(adHocClients);
+    }
+
+    /**
+     * Similar to notifyChunk, but sends the specific Ad-Hoc message variants
+     */
+    static async notifyAdHocChunk(chunk) {
+        let clientIndex = 0;
+        for (const client of chunk) {
+            if (!client.phone) {
+                console.log(`[DispatchNotifier] ⏭️ Ad-Hoc Skipped "${client.name}" (No phone number)`);
+                continue;
+            }
+
+            const cleanPhone = EvolutionService._formatPhone(client.phone);
+            
+            if (cleanPhone) {
+                const firstName = client.name.split(' ')[0];
+                const baseMessage = msg.dispatchAdHoc.clientAlert(firstName);
+                const humanizedMessage = EvolutionService.humanizeMessage(baseMessage);
+                const remoteJid = `${cleanPhone}@s.whatsapp.net`;
+
+                try {
+                    if (clientIndex > 0) {
+                        const tempoBase = 25000;
+                        const delayFinal = tempoBase + Math.floor(Math.random() * 5000) + 2000;
+                        console.log(`[DispatchNotifier] ⏳ Anti-spam (AdHoc): Esperando ${delayFinal / 1000}s antes de avisar ${firstName}...`);
+                        await new Promise(resolve => setTimeout(resolve, delayFinal));
+                    } else {
+                        const randomDelay = Math.floor(Math.random() * 3000) + 1000;
+                        await new Promise(resolve => setTimeout(resolve, randomDelay));
+                    }
+
+                    await EvolutionService.simulateTypingAndSend(cleanPhone, humanizedMessage, remoteJid);
+                    console.log(`[DispatchNotifier] ✅ Sent Ad-Hoc reminder to ${firstName} (${cleanPhone})`);
+                } catch (sendError) {
+                    console.error(`[DispatchNotifier] ❌ Failed to send Ad-Hoc reminder to ${client.name} (${cleanPhone}):`, sendError.message);
+                }
+            }
+            clientIndex++;
+        }
+    }
 }
 
 module.exports = DispatchNotifierService;
