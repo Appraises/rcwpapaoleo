@@ -149,6 +149,14 @@ const dispatchReminders = [
     (name) => `Fala, ${name}! 🚚\n\nAvisando que logo mais a gente passa aí pra recolher o óleo, nossa equipe já tá na rua! Valeu pela parceria de sempre! 💚`,
 ];
 
+// ─── Unfinished Route Reminders (Para coletas parcialmente adiadas) ────
+
+const unfinishedRouteReminders = [
+    (name) => `Olá, ${name}! Tudo bem?\n\nPedimos desculpas, mas nossa equipe não conseguiu concluir a rota para fazer a coleta do seu óleo hoje. 😔\n\nMas não se preocupe! A sua solicitação foi colocada como prioridade para o próximo roteiro (amanhã ou nossa próxima saída operacional). Agradecemos a compreensão! ♻️💚`,
+    (name) => `Boa noite, ${name}! 🌙\n\nInfelizmente nosso coletador teve um imprevisto de horário/rota e não conseguiu passar no seu endereço hoje.\n\nMas fique tranquilo(a): já colocamos a sua coleta como nossa maior prioridade para o próximo dia de rotas! Desculpe-nos pelo transtorno. 🛢️🙏`,
+    (name) => `Oi, ${name}! 🌱\n\nPassando para avisar que não tivemos tempo hábil de concluir todas as coletas de hoje, incluindo a sua. Pedimos sinceras desculpas pelo atraso! 😕\n\nSua coleta tá anotada no topo da nossa lista pra próxima rota. Muito obrigado por guardar o óleo com a gente! ♻️`
+];
+
 // ─── Exports ──────────────────────────────────────────────────────────
 
 module.exports = {
@@ -166,6 +174,7 @@ module.exports = {
         partial: (name, done, left) => pick(completionPartial)(name, done, left),
         unknownMessage: (name) => pick(unknownMessageReplies)(name),
         noDispatch: (name) => pick(noDispatchReplies)(name),
+        unfinishedRoute: (name) => pick(unfinishedRouteReminders)(name),
     },
     ownerReport: {
         header: (date) => pick(ownerReportHeaders)(date),

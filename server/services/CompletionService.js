@@ -127,6 +127,26 @@ async function processCompletionMessage(collectorUserId, messageText, remoteJid,
                         dispatchOrder: null
                     });
                     returnedCount++;
+
+                    // Notify the client that they were skipped today but are a priority for next time
+                    if (req.Client && req.Client.phone) {
+                        const cleanPhone = EvolutionService._formatPhone(req.Client.phone);
+                        if (cleanPhone) {
+                            const firstName = req.Client.name.split(' ')[0];
+                            const unfinishedMsg = msg.completion.unfinishedRoute(firstName);
+                            const humanizedMsg = EvolutionService.humanizeMessage(unfinishedMsg);
+                            const remoteJid = `${cleanPhone}@s.whatsapp.net`;
+                            
+                            try {
+                                const randomDelay = Math.floor(Math.random() * 3000) + 1000;
+                                await new Promise(resolve => setTimeout(resolve, randomDelay));
+                                await EvolutionService.simulateTypingAndSend(cleanPhone, humanizedMsg, remoteJid);
+                                console.log(`[CompletionService] 📤 Sent unfinished route notification to ${firstName}`);
+                            } catch (e) {
+                                console.error(`[CompletionService] ❌ Failed to send unfinished notification to ${firstName}:`, e.message);
+                            }
+                        }
+                    }
                 }
             }
             console.log(`[CompletionService] ✅ ${completedCount} COMPLETED, ${returnedCount} returned to PENDING`);
