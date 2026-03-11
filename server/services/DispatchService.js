@@ -6,6 +6,7 @@ const { Op } = require('sequelize');
 const RouteService = require('./RouteService');
 const EvolutionService = require('./EvolutionService');
 const GeocodingService = require('./GeocodingService');
+const DispatchNotifierService = require('./DispatchNotifierService');
 const msg = require('../utils/MessageVariation');
 const { format } = require('date-fns');
 
@@ -196,6 +197,9 @@ async function dispatchDailyRoutes() {
 
             await markDispatchedWithOrder(validRequests, null, route.orderedIndices);
 
+            // Trigger progressive notifications for clients
+            DispatchNotifierService.startNotificationQueue(orderedDetails);
+
             console.log('[DispatchService] ✅ Single dispatch completed successfully!');
             return {
                 dispatched: true,
@@ -248,6 +252,10 @@ async function dispatchDailyRoutes() {
         // Save dispatchOrder and mark as DISPATCHED for both groups
         await markDispatchedWithOrder(validRequests, groupAIndices, routeA.orderedIndices);
         await markDispatchedWithOrder(validRequests, groupBIndices, routeB.orderedIndices);
+
+        // Trigger progressive notifications for clients in BOTH routes
+        DispatchNotifierService.startNotificationQueue(orderedDetailsA);
+        DispatchNotifierService.startNotificationQueue(orderedDetailsB);
 
         console.log('[DispatchService] ✅ Dual dispatch completed successfully!');
         return {

@@ -140,6 +140,15 @@ const churnReminders = [
     (name) => `Oi ${name}! RCW Papa Óleo passando pra dar um alô. 👋\n\nJá estamos na época da coleta de vocês? Se o tambor/bombona já tiver cheio, fiquem à vontade pra pedir a coleta por aqui. 💚🛢️`
 ];
 
+// ─── Dispatch Reminders (Para os clientes da rota do dia) ───────────────
+
+const dispatchReminders = [
+    (name) => `Olá, ${name}! ♻️\n\nNossa equipe de coleta acabou de iniciar a rota do dia e passaremos no seu estabelecimento em breve para recolher o óleo! Já pode ir deixando no jeito. Agradecemos! 💚`,
+    (name) => `Bom dia, ${name}! 🛢️\n\nSó passando pra avisar que já estamos a caminho pra fazer a sua coleta de óleo de hoje. Daqui a pouquinho nosso coletador chega por aí! 🚛`,
+    (name) => `Oi, ${name}! Tudo bem? 🌱\n\nNossa rota de hoje já começou e seu endereço tá na nossa lista de coletas! O coletor já está a caminho, então pode deixar tudo preparado. Obrigado! ♻️`,
+    (name) => `Fala, ${name}! 🚚\n\nAvisando que logo mais a gente passa aí pra recolher o óleo, nossa equipe já tá na rua! Valeu pela parceria de sempre! 💚`,
+];
+
 // ─── Exports ──────────────────────────────────────────────────────────
 
 module.exports = {
@@ -168,5 +177,8 @@ module.exports = {
     },
     churn: {
         reminder: (name) => pick(churnReminders)(name),
+    },
+    dispatchReminder: {
+        notification: (name) => pick(dispatchReminders)(name),
     }
 };
