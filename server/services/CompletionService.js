@@ -79,6 +79,7 @@ async function processCompletionMessage(collectorUserId, messageText, remoteJid,
         let returnedCount = 0;
         const completedLocations = [];
         const pendingLocations = [];
+        const skippedClients = [];
 
         if (intent.type === 'ALL') {
             for (const req of dispatchedRequests) {
@@ -128,24 +129,9 @@ async function processCompletionMessage(collectorUserId, messageText, remoteJid,
                     });
                     returnedCount++;
 
-                    // Notify the client that they were skipped today but are a priority for next time
+                    // Armazena cliente devolvido para o chunking depois do relatório do dono
                     if (req.Client && req.Client.phone) {
-                        const cleanPhone = EvolutionService._formatPhone(req.Client.phone);
-                        if (cleanPhone) {
-                            const firstName = req.Client.name.split(' ')[0];
-                            const unfinishedMsg = msg.completion.unfinishedRoute(firstName);
-                            const humanizedMsg = EvolutionService.humanizeMessage(unfinishedMsg);
-                            const remoteJid = `${cleanPhone}@s.whatsapp.net`;
-                            
-                            try {
-                                const randomDelay = Math.floor(Math.random() * 3000) + 1000;
-                                await new Promise(resolve => setTimeout(resolve, randomDelay));
-                                await EvolutionService.simulateTypingAndSend(cleanPhone, humanizedMsg, remoteJid);
-                                console.log(`[CompletionService] 📤 Sent unfinished route notification to ${firstName}`);
-                            } catch (e) {
-                                console.error(`[CompletionService] ❌ Failed to send unfinished notification to ${firstName}:`, e.message);
-                            }
-                        }
+                        skippedClients.push(req.Client);
                     }
                 }
             }
@@ -165,6 +151,11 @@ async function processCompletionMessage(collectorUserId, messageText, remoteJid,
 
         // 4. Send daily report to the owner
         await sendOwnerReport(collector.name, completedLocations, pendingLocations);
+
+        // 5. Trigger progressive delay notifications via chunking for skipped clients
+        if (skippedClients.length > 0) {
+            startUnfinishedRouteNotificationQueue(skippedClients);
+        }
 
     } catch (error) {
         console.error(`[CompletionService] ❌ Error processing completion:`, error);
@@ -255,6 +246,73 @@ async function sendOwnerReport(collectorName, completedLocations, pendingLocatio
 
     } catch (error) {
         console.error(`[CompletionService] ❌ Error sending owner report:`, error);
+    }
+}
+
+/**
+ * Starts a chunked notification queue for clients that were skipped.
+ */
+function startUnfinishedRouteNotificationQueue(clients) {
+    if (!clients || clients.length === 0) return;
+
+    console.log(`[CompletionService] 📡 Starting progressive apology queue for ${clients.length} undone clients.`);
+
+    const chunkSize = 5;
+    const delayMs = 40 * 60 * 1000; // 40 minutos
+
+    let chunks = [];
+    for (let i = 0; i < clients.length; i += chunkSize) {
+        chunks.push(clients.slice(i, i + chunkSize));
+    }
+
+    console.log(`[CompletionService] 📦 Apology queue split into ${chunks.length} chunks de até ${chunkSize} clientes.`);
+
+    if (chunks.length > 0) {
+        notifyUnfinishedChunk(chunks[0], 1, chunks.length);
+    }
+
+    for (let idx = 1; idx < chunks.length; idx++) {
+        const timeToWait = idx * delayMs;
+        setTimeout(() => {
+            notifyUnfinishedChunk(chunks[idx], idx + 1, chunks.length);
+        }, timeToWait);
+        console.log(`[CompletionService] ⏱️ Scheduled apology chunk ${idx + 1}/${chunks.length} in ${timeToWait / 60000} mins.`);
+    }
+}
+
+/**
+ * Notifica um lote de clientes aplicando o anti-spam (25s + randomico).
+ */
+async function notifyUnfinishedChunk(chunk, currentChunkNum, totalChunks) {
+    console.log(`[CompletionService] 📤 Processing apology chunk ${currentChunkNum}/${totalChunks} (${chunk.length} clients)`);
+    
+    let clientIndex = 0;
+    for (const client of chunk) {
+        const cleanPhone = EvolutionService._formatPhone(client.phone);
+        if (cleanPhone) {
+            const firstName = client.name.split(' ')[0];
+            const unfinishedMsg = msg.completion.unfinishedRoute(firstName);
+            const humanizedMsg = EvolutionService.humanizeMessage(unfinishedMsg);
+            const remoteJid = `${cleanPhone}@s.whatsapp.net`;
+            
+            try {
+                if (clientIndex > 0) {
+                    const tempoBase = 25000;
+                    const delayFinal = tempoBase + Math.floor(Math.random() * 5000) + 2000;
+                    console.log(`[CompletionService] ⏳ Anti-spam: Esperando ${delayFinal / 1000}s antes de enviar desculpas para ${firstName}...`);
+                    await new Promise(resolve => setTimeout(resolve, delayFinal));
+                } else {
+                    const randomDelay = Math.floor(Math.random() * 3000) + 1000;
+                    await new Promise(resolve => setTimeout(resolve, randomDelay));
+                }
+
+                await EvolutionService.simulateTypingAndSend(cleanPhone, humanizedMsg, remoteJid);
+                console.log(`[CompletionService] 📤 Sent unfinished route notification to ${firstName}`);
+            } catch (e) {
+                console.error(`[CompletionService] ❌ Failed to send unfinished notification to ${firstName}:`, e.message);
+            }
+        }
+        clientIndex++;
     }
 }
 

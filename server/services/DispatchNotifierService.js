@@ -43,6 +43,7 @@ class DispatchNotifierService {
     static async notifyChunk(chunk, currentChunkNum, totalChunks) {
         console.log(`[DispatchNotifier] 📤 Processing chunk ${currentChunkNum}/${totalChunks} (${chunk.length} clients)`);
         
+        let clientIndex = 0;
         for (const client of chunk) {
             if (!client.phone) {
                 console.log(`[DispatchNotifier] ⏭️ Skipped "${client.name}" (No phone number)`);
@@ -58,9 +59,17 @@ class DispatchNotifierService {
                 const remoteJid = `${cleanPhone}@s.whatsapp.net`;
 
                 try {
-                    // Small random delay before sending to avoid rate limit spikes
-                    const randomDelay = Math.floor(Math.random() * 5000) + 2000;
-                    await new Promise(resolve => setTimeout(resolve, randomDelay));
+                    // Regra 1 e 2: Atraso Base Progressivo (25s) com Fator Randômico (2s a 7s)
+                    if (clientIndex > 0) {
+                        const tempoBase = 25000;
+                        const delayFinal = tempoBase + Math.floor(Math.random() * 5000) + 2000;
+                        console.log(`[DispatchNotifier] ⏳ Anti-spam: Esperando ${delayFinal / 1000}s antes de notificar ${firstName}...`);
+                        await new Promise(resolve => setTimeout(resolve, delayFinal));
+                    } else {
+                        // Pequeno delay apenas pro primeiro elemento do chunk para não ser instantâneo puro
+                        const randomDelay = Math.floor(Math.random() * 3000) + 1000;
+                        await new Promise(resolve => setTimeout(resolve, randomDelay));
+                    }
 
                     await EvolutionService.simulateTypingAndSend(cleanPhone, humanizedMessage, remoteJid);
                     console.log(`[DispatchNotifier] ✅ Sent reminder to ${firstName} (${cleanPhone})`);
@@ -68,6 +77,7 @@ class DispatchNotifierService {
                     console.error(`[DispatchNotifier] ❌ Failed to send reminder to ${client.name} (${cleanPhone}):`, sendError.message);
                 }
             }
+            clientIndex++;
         }
     }
 }
