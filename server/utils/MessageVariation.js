@@ -162,7 +162,7 @@ const unfinishedRouteReminders = [
 const adHocClientAlerts = [
     (name) => `Oi, ${name}! Tudo bem?\n\nNossa equipe já está com a rota do dia na rua e conseguimos incluir você como uma coleta bônus pra hoje! ✨\n\nDeixa o óleo preparado que daqui a pouco passaremos aí. ♻️💚`,
     (name) => `Boa notícia, ${name}! 🥳\n\nNossa rota já estava fechada, mas demos um jeito e encaixamos o seu pedido no roteiro de hoje. O coletador já foi avisado e logo logo deve colar por aí. Valeu! 🚛`,
-    (name) => `Olá, ${name}! 🛢️\n\nDeu match! Conseguimos incluir sua coleta agora mesmo na nossa rota atual. Podes ir deixando tudo no jeito. A natureza agradece! 🌱`
+    (name) => `Olá, ${name}! 🛢️\n\nDeu match! Conseguimos incluir sua coleta agora mesmo na nossa rota atual. Pode ir deixando tudo no jeito. A natureza agradece! 🌱`
 ];
 
 const adHocCollectorAlerts = [

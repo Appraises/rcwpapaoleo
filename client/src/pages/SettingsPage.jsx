@@ -55,7 +55,6 @@ const SettingsPage = () => {
     const [ownerPhone, setOwnerPhone] = useState('');
     const [dispatchBusinessStart, setDispatchBusinessStart] = useState('08:00');
     const [dispatchBusinessEnd, setDispatchBusinessEnd] = useState('18:00');
-    const [dispatchConsolidatedTime, setDispatchConsolidatedTime] = useState('17:00');
     const [dispatchSaved, setDispatchSaved] = useState(false);
     const [dispatching, setDispatching] = useState(false);
     const [dispatchResult, setDispatchResult] = useState(null);
@@ -103,7 +102,7 @@ const SettingsPage = () => {
 
     const fetchSettings = async () => {
         try {
-            const res = await api.get('/settings?keys=base_lat,base_lng,base_name,dispatch_primary_collector_id,dispatch_secondary_collector_id,dispatch_owner_phone,dispatch_business_start,dispatch_business_end,dispatch_consolidated_time');
+            const res = await api.get('/settings?keys=base_lat,base_lng,base_name,dispatch_primary_collector_id,dispatch_secondary_collector_id,dispatch_owner_phone,dispatch_business_start,dispatch_business_end');
             const s = res.data;
             if (s.base_name) setBaseName(s.base_name);
             if (s.base_lat) setBaseLat(s.base_lat);
@@ -113,7 +112,6 @@ const SettingsPage = () => {
             if (s.dispatch_owner_phone) setOwnerPhone(formatPhone(s.dispatch_owner_phone));
             if (s.dispatch_business_start) setDispatchBusinessStart(s.dispatch_business_start);
             if (s.dispatch_business_end) setDispatchBusinessEnd(s.dispatch_business_end);
-            if (s.dispatch_consolidated_time) setDispatchConsolidatedTime(s.dispatch_consolidated_time);
         } catch (error) {
             console.error('Error fetching settings:', error);
         }
@@ -207,8 +205,7 @@ const SettingsPage = () => {
                 dispatch_secondary_collector_id: secondaryCollectorId,
                 dispatch_owner_phone: ownerPhone,
                 dispatch_business_start: dispatchBusinessStart,
-                dispatch_business_end: dispatchBusinessEnd,
-                dispatch_consolidated_time: dispatchConsolidatedTime
+                dispatch_business_end: dispatchBusinessEnd
             });
             setDispatchSaved(true);
             setTimeout(() => setDispatchSaved(false), 2500);
@@ -525,15 +522,6 @@ const SettingsPage = () => {
                                     type="time"
                                     value={dispatchBusinessEnd}
                                     onChange={(e) => setDispatchBusinessEnd(e.target.value)}
-                                    style={inputStyle}
-                                />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <label style={labelStyle}>Relatório Consolidado</label>
-                                <input
-                                    type="time"
-                                    value={dispatchConsolidatedTime}
-                                    onChange={(e) => setDispatchConsolidatedTime(e.target.value)}
                                     style={inputStyle}
                                 />
                             </div>

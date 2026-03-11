@@ -14,7 +14,7 @@ const initConsolidatedListCron = () => {
     // Runs every minute to match the exact consolidated time
     cron.schedule('* * * * *', async () => {
         try {
-            const consolidatedTime = await getSetting('dispatch_consolidated_time', '17:00');
+            const consolidatedTime = await getSetting('dispatch_business_end', '18:00');
             
             const now = new Date();
             const currentTime = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
