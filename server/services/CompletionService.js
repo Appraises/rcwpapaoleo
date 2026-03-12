@@ -136,11 +136,54 @@ async function processCompletionMessage(collectorUserId, messageText, remoteJid,
                 }
             }
             console.log(`[CompletionService] ✅ ${completedCount} COMPLETED, ${returnedCount} returned to PENDING`);
+        } else if (intent.type === 'LITERS_REPORT') {
+            const entries = intent.entries;
+            let totalLiters = 0;
+
+            console.log(`[CompletionService] 📊 Liters report mode:`, entries);
+
+            for (const req of dispatchedRequests) {
+                // Find if this request's dispatchOrder was reported
+                const entry = entries.find(e => e.stop === req.dispatchOrder);
+
+                if (entry) {
+                    completedLocations.push(buildLocationName(req, entry.liters));
+                    await req.update({ status: 'COMPLETED', dispatchOrder: null });
+                    
+                    const qty = entry.liters;
+                    totalLiters += qty;
+
+                    if (qty > 0) {
+                        await Collection.create({
+                            clientId: req.clientId,
+                            userId: collector.id,
+                            date: new Date(),
+                            quantity: qty,
+                            observation: 'Coleta registrada com litros reais via WhatsApp'
+                        });
+                    }
+                    completedCount++;
+                } else {
+                    pendingLocations.push(buildLocationName(req));
+                    await req.update({
+                        status: 'PENDING',
+                        priority: req.priority + 1,
+                        dispatchOrder: null
+                    });
+                    returnedCount++;
+                }
+            }
+            console.log(`[CompletionService] ✅ ${completedCount} COMPLETED (${totalLiters}L total), ${returnedCount} returned to PENDING`);
+
+            // Store total to use in confirmation
+            intent.totalLiters = totalLiters;
         }
 
         // 3. Send confirmation to collector
         let confirmMsg;
-        if (returnedCount === 0) {
+        if (intent.type === 'LITERS_REPORT') {
+            confirmMsg = msg.completion.litersReport(collector.name, completedCount, returnedCount, intent.totalLiters);
+        } else if (returnedCount === 0) {
             confirmMsg = msg.completion.allDone(collector.name, completedCount);
         } else {
             confirmMsg = msg.completion.partial(collector.name, completedCount, returnedCount);
@@ -165,7 +208,7 @@ async function processCompletionMessage(collectorUserId, messageText, remoteJid,
 /**
  * Build a human-readable location name from a CollectionRequest with Client.
  */
-function buildLocationName(req) {
+function buildLocationName(req, realLiters = null) {
     const client = req.Client;
     if (!client) return `Solicitação #${req.id}`;
 
@@ -175,7 +218,13 @@ function buildLocationName(req) {
     const district = addr?.district || client.district || '';
     const addressStr = [street, number].filter(Boolean).join(', ');
     const districtStr = district ? ` — ${district}` : '';
-    const mediaStr = client.averageOilLiters ? ` [Média: ${client.averageOilLiters}L]` : '';
+    
+    let mediaStr = '';
+    if (realLiters !== null) {
+        mediaStr = ` [Coletado: ${realLiters}L]`;
+    } else if (client.averageOilLiters) {
+        mediaStr = ` [Média: ${client.averageOilLiters}L]`;
+    }
 
     return `${client.name} (${addressStr}${districtStr})${mediaStr}`;
 }

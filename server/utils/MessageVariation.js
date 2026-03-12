@@ -47,12 +47,10 @@ const dispatchWazeLabels = [
 ];
 
 const dispatchClosings = [
-    'Bom trabalho! ♻️💚',
-    'Boa coleta! 💪🛢️',
-    'Manda ver! ♻️🚛',
-    'Boa sorte na rota! 💚',
-    'Vamos nessa! ♻️💪',
-    'Bora pra cima! 🛢️💚',
+    'Bom trabalho! ♻️ Ao fim do dia, mande os litros de cada parada assim:\n1. (litros da 1ª parada)\n2. (litros da 2ª)',
+    'Boa coleta! 🛢️ Depois manda as quantidades reais recolhidas:\n1. (L)\n2. (L)',
+    'Manda ver! 🚛 Pra fechar a rota, informe os litros numa listinha:\n1. XX\n2. XX',
+    'Vamos nessa! 💪 Lembre de me mandar o relatório no fim do dia:\n1. (qnt parada 1)\n2. (qnt parada 2)',
 ];
 
 // ─── Completion (confirmação pro coletor) ─────────────────────────────
@@ -70,6 +68,12 @@ const completionPartial = [
     (name, done, left) => `✅ Anotado, ${name}!\n\n• *${done}* concluída(s) ✔️\n• *${left}* voltaram pra fila de amanhã (prioridade alta)\n\nDescanse bem! 🛢️`,
     (name, done, left) => `✅ Tudo certo, ${name}!\n\n• *${done}* coleta(s) feita(s)\n• *${left}* reagendada(s) com prioridade pro próximo dia\n\nValeu! ♻️💪`,
     (name, done, left) => `✅ Ok, ${name}!\n\n• Concluídas: *${done}*\n• Para amanhã (prioridade): *${left}*\n\nBom descanso! 💚`,
+];
+
+const completionLitersReport = [
+    (name, done, left, totalLiters) => `✅ Show de bola, ${name}!\n\nRegistrei *${done}* coletas com o total de *${totalLiters}L*! 🛢️\n\n${left > 0 ? `⚠️ Ficaram *${left}* pra amanhã.\n\n` : ''}Bom descanso! 💚♻️`,
+    (name, done, left, totalLiters) => `✅ Tudo anotado, ${name}!\n\nTotal recolhido hoje: *${totalLiters} listros* em *${done}* locais. 💪\n\n${left > 0 ? `⚠️ Sobraram *${left}* pro próximo dia.\n\n` : ''}Descanse bem! 🚛`,
+    (name, done, left, totalLiters) => `✅ Perfeito, ${name}!\n\nFechou em *${done}* coletas dando um belo total de *${totalLiters}L*! ♻️\n\n${left > 0 ? `⚠️ As *${left}* restantes já estão na fila.\n\n` : ''}Valeu pelo corre! 💚`,
 ];
 
 // ─── Owner Report ─────────────────────────────────────────────────────
@@ -120,9 +124,9 @@ const ownerPendingWarnings = [
 // ─── Unknown message reply ────────────────────────────────────────────
 
 const unknownMessageReplies = [
-    (name) => `Oi, ${name}! Não entendi a mensagem. Para informar as coletas do dia, envie:\n\n• "coletei todos" — se completou toda a rota\n• "coletei até o 4" — se coletou até o ponto 4\n\nOu fale com o admin pelo sistema. 🛢️`,
-    (name) => `Fala, ${name}! Não consegui entender. Pra registrar as coletas, mande:\n\n• "coletei todos" — pra fechar o dia\n• "coletei até o 3" — se parou no ponto 3\n\nQualquer dúvida, fala com o responsável. ♻️`,
-    (name) => `Oi ${name}! Não entendi essa mensagem. Você pode enviar:\n\n• "coletei todos"\n• "coletei até o X"\n\nAssim consigo registrar certinho! 🛢️`,
+    (name) => `Oi, ${name}! Não entendi a mensagem. Para fechar o dia, liste a quantidade de litros em cada parada:\n\n1. (litros da parada 1)\n2. (litros da parada 2)\n3. (litros da parada 3)\n\nOu fale com o admin se deu algum problema. 🛢️`,
+    (name) => `Fala, ${name}! Não consegui entender. Pra gente saber exatamente o quanto você coletou, mande uma listinha:\n\n1. 20\n2. 50\n3. 15\n\nAssim anoto direitinho. ♻️`,
+    (name) => `Oi ${name}! Não entendi essa mensagem. Você deve enviar o relatório colocando número da parada e a quantidade:\n\n1. 20\n2. 50\n\nOu usar formato antigo "coletei todos". 🛢️`,
 ];
 
 const noDispatchReplies = [
@@ -192,6 +196,7 @@ module.exports = {
     completion: {
         allDone: (name, count) => pick(completionAllDone)(name, count),
         partial: (name, done, left) => pick(completionPartial)(name, done, left),
+        litersReport: (name, done, left, totalLiters) => pick(completionLitersReport)(name, done, left, totalLiters),
         unknownMessage: (name) => pick(unknownMessageReplies)(name),
         noDispatch: (name) => pick(noDispatchReplies)(name),
         unfinishedRoute: (name) => pick(unfinishedRouteReminders)(name),
