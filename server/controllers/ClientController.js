@@ -72,6 +72,7 @@ exports.getAllClients = async (req, res) => {
             where = {
                 [Op.or]: [
                     { name: { [Op.like]: `%${search}%` } },
+                    { tradeName: { [Op.like]: `%${search}%` } },
                     { document: { [Op.like]: `%${search}%` } }
                 ]
             };
