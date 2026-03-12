@@ -25,7 +25,11 @@ exports.getFinancialStats = async (req, res) => {
             const price = col.Client ? (col.Client.pricePerLiter || 0) : 0;
 
             totalVolume += quantity;
-            totalCost += quantity * price;
+            
+            // Ignore cost if the collection was a trade for products (troca)
+            if (!(col.observation && col.observation.toLowerCase().includes('troca'))) {
+                totalCost += quantity * price;
+            }
         });
 
         const totalRevenue = totalVolume * sellingPrice;

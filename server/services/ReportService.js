@@ -47,13 +47,16 @@ class ReportService {
             const tableData = collections.map(col => {
                 const quantity = col.quantity || 0;
                 const price = col.Client ? (col.Client.pricePerLiter || 0) : 0;
+                const isTroca = col.observation && col.observation.toLowerCase().includes('troca');
 
                 totalVolume += quantity;
-                totalCost += quantity * price;
+                if (!isTroca) {
+                    totalCost += quantity * price;
+                }
 
                 return {
                     date: format(new Date(col.date), 'dd/MM/yyyy'),
-                    client: col.Client ? col.Client.name : 'Desconhecido',
+                    client: col.Client ? (isTroca ? `${col.Client.name} (Troca)` : col.Client.name) : 'Desconhecido',
                     quantity: `${quantity} L`,
                     collector: col.User ? col.User.name : 'Desconhecido'
                 };

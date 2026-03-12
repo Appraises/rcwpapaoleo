@@ -146,8 +146,8 @@ async function processCompletionMessage(collectorUserId, messageText, remoteJid,
                 // Find if this request's dispatchOrder was reported
                 const entry = entries.find(e => e.stop === req.dispatchOrder);
 
-                if (entry) {
-                    completedLocations.push(buildLocationName(req, entry.liters));
+                if (entry && entry.liters > 0) {
+                    completedLocations.push(buildLocationName(req, entry.liters, entry.isTroca));
                     await req.update({ status: 'COMPLETED', dispatchOrder: null });
                     
                     const qty = entry.liters;
@@ -159,7 +159,7 @@ async function processCompletionMessage(collectorUserId, messageText, remoteJid,
                             userId: collector.id,
                             date: new Date(),
                             quantity: qty,
-                            observation: 'Coleta registrada com litros reais via WhatsApp'
+                            observation: entry.isTroca ? 'Coleta registrada via troca de produtos via WhatsApp' : 'Coleta registrada com litros reais via WhatsApp'
                         });
                     }
                     completedCount++;
@@ -208,7 +208,7 @@ async function processCompletionMessage(collectorUserId, messageText, remoteJid,
 /**
  * Build a human-readable location name from a CollectionRequest with Client.
  */
-function buildLocationName(req, realLiters = null) {
+function buildLocationName(req, realLiters = null, isTroca = false) {
     const client = req.Client;
     if (!client) return `Solicitação #${req.id}`;
 
@@ -221,7 +221,7 @@ function buildLocationName(req, realLiters = null) {
     
     let mediaStr = '';
     if (realLiters !== null) {
-        mediaStr = ` [Coletado: ${realLiters}L]`;
+        mediaStr = isTroca ? ` [Coletado: ${realLiters}L — 🔄 Troca]` : ` [Coletado: ${realLiters}L]`;
     } else if (client.averageOilLiters) {
         mediaStr = ` [Média: ${client.averageOilLiters}L]`;
     }
