@@ -171,6 +171,22 @@ const ClientFormPage = () => {
                 .map(s => capitalize(s))
                 .join(' ');
 
+            // Fetch cities for this state if we don't have them yet to ensure exact name match
+            let currentCities = cities;
+            if (data.uf && (!currentCities.length || formData.state !== data.uf)) {
+                try {
+                    const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${data.uf}/municipios?orderBy=nome`);
+                    const ibgeData = await res.json();
+                    currentCities = ibgeData.map(m => m.nome);
+                    setCities(currentCities);
+                } catch (err) {
+                    console.error('Erro ao buscar cidades durante lookup CNPJ:', err);
+                }
+            }
+
+            const rawCity = data.municipio || '';
+            const matchedCity = currentCities.find(c => c.toLowerCase() === rawCity.toLowerCase()) || capitalize(rawCity);
+
             setFormData(prev => ({
                 ...prev,
                 name: prev.name || data.razao_social || '',
@@ -179,8 +195,8 @@ const ClientFormPage = () => {
                 street: prev.street || logradouro,
                 number: prev.number || (data.numero && data.numero !== 'SN' ? data.numero : ''),
                 district: prev.district || capitalize(data.bairro || ''),
-                city: prev.city || capitalize(data.municipio || ''),
-                state: prev.state || data.uf || ''
+                city: matchedCity,
+                state: data.uf || prev.state
             }));
         } catch (error) {
             console.error('BrasilAPI CNPJ Error:', error);
