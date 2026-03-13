@@ -177,8 +177,8 @@ const adHocCollectorAlerts = [
 // ─── Relatório Consolidado ────────────────────────────────────────────
 
 const consolidatedReportHeaders = [
-    (date) => `📋 *Lista Consolidada Final — ${date}*\n\nAqui estão todas as suas coletas de hoje na ordem correta (Matinais + Adicionais). \n\nNo fim do dia, responda com "coletei até o X" se baseando nessa lista:\n`,
-    (date) => `📝 *Resumo de Bordo — ${date}*\n\nEssa é a sua lista combinada com todos os encaixes de hoje.\n\nDepois avise: "coletei até o nr X" olhando daqui:\n`,
+    (date) => `📋 *Lista Consolidada Final — ${date}*\n\nAqui estão todas as suas coletas de hoje na ordem correta (Matinais + Adicionais). \n\nNo fim do dia, informe os litros de cada parada nesta ordem:\n\n1. 12\n2. 22\n3. 37\n\nLista de hoje:\n`,
+    (date) => `📝 *Resumo de Bordo — ${date}*\n\nEssa é a sua lista combinada com todos os encaixes de hoje.\n\nPara encerrar o dia, mande a quantidade de litros assim:\n\n1. (quantidade)\n2. (quantidade)\n\nConfira as paradas:\n`,
 ];
 
 // ─── Exports ──────────────────────────────────────────────────────────
