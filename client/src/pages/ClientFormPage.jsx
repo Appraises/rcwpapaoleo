@@ -171,21 +171,24 @@ const ClientFormPage = () => {
                 .map(s => capitalize(s))
                 .join(' ');
 
-            // Fetch cities for this state if we don't have them yet to ensure exact name match
-            let currentCities = cities;
-            if (data.uf && (!currentCities.length || formData.state !== data.uf)) {
+            // Fetch IBGE cities for the returned state to get exact city name
+            let matchedCity = capitalize(data.municipio || '');
+            let fetchedCities = cities;
+            if (data.uf) {
                 try {
                     const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${data.uf}/municipios?orderBy=nome`);
                     const ibgeData = await res.json();
-                    currentCities = ibgeData.map(m => m.nome);
-                    setCities(currentCities);
+                    fetchedCities = ibgeData.map(m => m.nome);
+                    setCities(fetchedCities);
+
+                    // Match city name case-insensitively against the IBGE list
+                    const rawCity = (data.municipio || '').trim();
+                    const exactMatch = fetchedCities.find(c => c.toLowerCase() === rawCity.toLowerCase());
+                    if (exactMatch) matchedCity = exactMatch;
                 } catch (err) {
                     console.error('Erro ao buscar cidades durante lookup CNPJ:', err);
                 }
             }
-
-            const rawCity = data.municipio || '';
-            const matchedCity = currentCities.find(c => c.toLowerCase() === rawCity.toLowerCase()) || capitalize(rawCity);
 
             setFormData(prev => ({
                 ...prev,
@@ -195,8 +198,8 @@ const ClientFormPage = () => {
                 street: prev.street || logradouro,
                 number: prev.number || (data.numero && data.numero !== 'SN' ? data.numero : ''),
                 district: prev.district || capitalize(data.bairro || ''),
-                city: matchedCity,
-                state: data.uf || prev.state
+                state: data.uf || prev.state,
+                city: matchedCity
             }));
         } catch (error) {
             console.error('BrasilAPI CNPJ Error:', error);
