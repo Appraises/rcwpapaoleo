@@ -82,26 +82,58 @@ exports.getDashboardStats = async (req, res) => {
             where: { status: 'DISPATCHED' }
         });
 
-        // Top 5 Districts by collection volume
-        const topDistrictsRaw = await Collection.findAll({
-            attributes: [
-                [col('Client.district'), 'districtName'],
-                [fn('sum', col('quantity')), 'totalQuantity']
-            ],
+        // Top 5 Districts by collection volume (with fuzzy name matching)
+        const allCollectionsWithClient = await Collection.findAll({
+            attributes: ['quantity'],
             include: [{
                 model: Client,
-                attributes: []
+                attributes: ['district', 'address']
             }],
-            group: ['Client.district'],
-            order: [[literal('totalQuantity'), 'DESC']],
-            limit: 5,
             raw: true
         });
-        
-        const topDistricts = topDistrictsRaw.map(item => ({
-            name: item.districtName || 'Desconhecido',
-            value: item.totalQuantity || 0
-        })).filter(d => d.value > 0);
+
+        // Normalize district name: lowercase, remove accents, trim, remove extra punctuation
+        const normalizeDistrict = (name) => {
+            if (!name) return null;
+            return name
+                .trim()
+                .toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove accents
+                .replace(/[,.\-;:\/\\]/g, ' ')   // replace punctuation with spaces
+                .replace(/\s+/g, ' ')             // collapse multiple spaces
+                .trim();
+        };
+
+        // Aggregate volumes by normalized district name, keeping track of the best original name
+        const districtMap = {};       // normalizedName -> { volume, originalName, nameCount }
+        const districtOriginals = {}; // normalizedName -> { name: count } to pick most common spelling
+
+        allCollectionsWithClient.forEach(row => {
+            const rawDistrict = row['Client.district'] || row['Client.address'] || null;
+            if (!rawDistrict) return;
+
+            const normalized = normalizeDistrict(rawDistrict);
+            if (!normalized) return;
+
+            if (!districtMap[normalized]) {
+                districtMap[normalized] = { volume: 0 };
+                districtOriginals[normalized] = {};
+            }
+            districtMap[normalized].volume += (row.quantity || 0);
+            districtOriginals[normalized][rawDistrict] = (districtOriginals[normalized][rawDistrict] || 0) + 1;
+        });
+
+        // Pick the most frequently used original spelling for each normalized district
+        const topDistricts = Object.entries(districtMap)
+            .map(([normalized, data]) => {
+                const originals = districtOriginals[normalized];
+                // Pick the spelling that appeared the most
+                const bestName = Object.entries(originals).sort((a, b) => b[1] - a[1])[0][0];
+                return { name: bestName, value: data.volume };
+            })
+            .filter(d => d.value > 0)
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
 
         // Top Buyers by sales volume
         const topBuyersRaw = await Sale.findAll({
