@@ -40,7 +40,8 @@ const UserModal = ({ user, onClose, onSuccess }) => {
             onSuccess();
         } catch (error) {
             console.error('Error saving user:', error);
-            alert('Erro ao salvar usuário');
+            const errorMsg = error.response?.data?.error || 'Erro desconhecido';
+            alert(`Erro ao salvar usuário: ${errorMsg}`);
         } finally {
             setLoading(false);
         }

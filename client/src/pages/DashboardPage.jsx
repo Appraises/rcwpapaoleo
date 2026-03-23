@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { Droplet, TrendingUp, Users, DollarSign, Settings, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
@@ -182,40 +182,69 @@ const DashboardPage = () => {
             {user?.role === 'admin' && financials && (
                 <div style={{ marginBottom: '3rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h3 style={{ fontSize: '1.4rem', color: '#333' }}>Financeiro & Sistema</h3>
+                        <h3 style={{ fontSize: '1.4rem', color: '#333' }}>Financeiro & Estoque</h3>
                         <div style={{ display: 'flex', gap: '1rem' }}>
                             <button onClick={() => setIsPriceModalOpen(true)} style={{
                                 display: 'flex', alignItems: 'center', gap: '0.5rem',
                                 padding: '0.5rem 1rem', borderRadius: 'var(--border-radius)',
                                 backgroundColor: 'white', border: '1px solid #ddd', cursor: 'pointer'
                             }}>
-                                <Settings size={16} /> Configurar Preço de Venda
+                                <Settings size={16} /> Configurar Preço Base
                             </button>
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-                        <div style={{ backgroundColor: '#fff7ed', padding: '1.5rem', borderRadius: 'var(--border-radius)', borderLeft: '5px solid #f97316' }}>
-                            <p style={{ color: '#9a3412', fontSize: '0.9rem', fontWeight: '600' }}>Receita Estimada (Venda)</p>
-                            <h3 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#7c2d12' }}>
-                                R$ {financials.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    <h4 style={{ color: '#555', marginBottom: '1rem', marginTop: '1.5rem' }}>Visão Geral de Volumes</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                        <div style={{ backgroundColor: '#eff6ff', padding: '1.5rem', borderRadius: 'var(--border-radius)', borderLeft: '5px solid #3b82f6' }}>
+                            <p style={{ color: '#1e3a8a', fontSize: '0.9rem', fontWeight: '600' }}>Estoque Atual (Parado)</p>
+                            <h3 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#1e3a8a' }}>
+                                {financials.currentInventory.toLocaleString('pt-BR')} L
                             </h3>
-                            <small style={{ color: '#9a3412' }}>Baseado em R$ {financials.sellingPrice}/L</small>
+                            <small style={{ color: '#1e40af' }}>Volume disponível para venda</small>
                         </div>
+                        
+                        <div style={{ backgroundColor: '#f0fdf4', padding: '1.5rem', borderRadius: 'var(--border-radius)', borderLeft: '5px solid #22c55e' }}>
+                            <p style={{ color: '#14532d', fontSize: '0.9rem', fontWeight: '600' }}>Total Vendido (Despachado)</p>
+                            <h3 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#14532d' }}>
+                                {financials.totalSoldVolume.toLocaleString('pt-BR')} L
+                            </h3>
+                            <small style={{ color: '#166534' }}>Volume histórico de vendas</small>
+                        </div>
+                    </div>
 
+                    <h4 style={{ color: '#555', marginBottom: '1rem', marginTop: '1.5rem' }}>Visão Financeira</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
                         <div style={{ backgroundColor: '#fef2f2', padding: '1.5rem', borderRadius: 'var(--border-radius)', borderLeft: '5px solid #ef4444' }}>
-                            <p style={{ color: '#991b1b', fontSize: '0.9rem', fontWeight: '600' }}>Custo Total (Compra)</p>
-                            <h3 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#7f1d1d' }}>
+                            <p style={{ color: '#991b1b', fontSize: '0.9rem', fontWeight: '600' }}>Custo de Aquisição</p>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#7f1d1d' }}>
                                 R$ {financials.totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </h3>
-                            <small style={{ color: '#991b1b' }}>Pagamentos aos clientes</small>
+                            <small style={{ color: '#991b1b' }}>Total pago nas coletas</small>
                         </div>
 
                         <div style={{ backgroundColor: '#f0fdf4', padding: '1.5rem', borderRadius: 'var(--border-radius)', borderLeft: '5px solid #22c55e' }}>
-                            <p style={{ color: '#166534', fontSize: '0.9rem', fontWeight: '600' }}>Lucro Estimado</p>
-                            <h3 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#14532d' }}>
-                                R$ {financials.totalProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            <p style={{ color: '#166534', fontSize: '0.9rem', fontWeight: '600' }}>Faturamento Realizado</p>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#14532d' }}>
+                                R$ {financials.totalRealizedRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </h3>
+                            <small style={{ color: '#166534' }}>Receita real (Painel de Vendas)</small>
+                        </div>
+
+                        <div style={{ backgroundColor: '#fff7ed', padding: '1.5rem', borderRadius: 'var(--border-radius)', borderLeft: '5px solid #f97316' }}>
+                            <p style={{ color: '#9a3412', fontSize: '0.9rem', fontWeight: '600' }}>Potencial em Estoque</p>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#7c2d12' }}>
+                                R$ {financials.pendingRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </h3>
+                            <small style={{ color: '#9a3412' }}>Base: R$ {financials.sellingPrice}/L</small>
+                        </div>
+
+                        <div style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: 'var(--border-radius)', borderLeft: '5px solid #475569' }}>
+                            <p style={{ color: '#334155', fontSize: '0.9rem', fontWeight: '600' }}>Balanço Projetado</p>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#0f172a' }}>
+                                R$ {financials.overallProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </h3>
+                            <small style={{ color: '#475569' }}>Faturamento + Estoque - Custo</small>
                         </div>
                     </div>
                 </div>
@@ -255,6 +284,62 @@ const DashboardPage = () => {
                                 <Bar dataKey="value" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', marginTop: '2rem' }}>
+                {/* Top Buyers Pie Chart */}
+                <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-md)' }}>
+                    <h3 style={{ marginBottom: '1.5rem', color: '#333', fontSize: '1.1rem' }}>Distribuição por Comprador (Vendas)</h3>
+                    <div style={{ height: '300px' }}>
+                        {stats.topBuyers && stats.topBuyers.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={stats.topBuyers}
+                                        cx="50%"
+                                        cy="50%"
+                                        labelLine={false}
+                                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                        outerRadius={100}
+                                        fill="#8884d8"
+                                        dataKey="value"
+                                    >
+                                        {stats.topBuyers.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip formatter={(value) => `${value} L`} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <p style={{ color: '#999', textAlign: 'center', marginTop: '4rem' }}>Sem dados de vendas suficientes.</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Top Districts Bar Chart */}
+                <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: 'var(--border-radius)', boxShadow: 'var(--shadow-md)' }}>
+                    <h3 style={{ marginBottom: '1.5rem', color: '#333', fontSize: '1.1rem' }}>Top Bairros (Coletas)</h3>
+                    <div style={{ height: '300px' }}>
+                        {stats.topDistricts && stats.topDistricts.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={stats.topDistricts} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                    <XAxis type="number" />
+                                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
+                                    <Tooltip cursor={{ fill: 'transparent' }} formatter={(value) => `${value} L`} />
+                                    <Bar dataKey="value" fill="#8884d8" radius={[0, 4, 4, 0]}>
+                                        {stats.topDistricts.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <p style={{ color: '#999', textAlign: 'center', marginTop: '4rem' }}>Sem dados de coletas suficientes.</p>
+                        )}
                     </div>
                 </div>
             </div>

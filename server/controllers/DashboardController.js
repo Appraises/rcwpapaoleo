@@ -1,4 +1,4 @@
-const { Client, Collection, CollectionRequest } = require('../models');
+const { Client, Collection, CollectionRequest, Sale, Buyer } = require('../models');
 const { Op, fn, col, literal } = require('sequelize');
 const { exec } = require('child_process');
 
@@ -82,13 +82,54 @@ exports.getDashboardStats = async (req, res) => {
             where: { status: 'DISPATCHED' }
         });
 
+        // Top 5 Districts by collection volume
+        const topDistrictsRaw = await Collection.findAll({
+            attributes: [
+                [fn('sum', col('quantity')), 'totalQuantity']
+            ],
+            include: [{
+                model: Client,
+                attributes: ['district']
+            }],
+            group: ['Client.district'],
+            order: [[literal('totalQuantity'), 'DESC']],
+            limit: 5
+        });
+        
+        const topDistricts = topDistrictsRaw.map(item => ({
+            name: item.Client?.district || 'Desconhecido',
+            value: item.get('totalQuantity') || 0
+        })).filter(d => d.value > 0);
+
+        // Top Buyers by sales volume
+        const topBuyersRaw = await Sale.findAll({
+            attributes: [
+                'buyerId',
+                [fn('sum', col('quantityLiters')), 'totalVolume']
+            ],
+            include: [{
+                model: Buyer,
+                attributes: ['name']
+            }],
+            group: ['buyerId'],
+            order: [[literal('totalVolume'), 'DESC']],
+            limit: 5
+        });
+
+        const topBuyers = topBuyersRaw.map(item => ({
+            name: item.Buyer?.name || 'Desconhecido',
+            value: item.get('totalVolume') || 0
+        })).filter(b => b.value > 0);
+
         res.json({
             totalMonth,
             totalGeneral,
             ranking,
             chartData,
             pendingRequestsCount,
-            dispatchedRequestsCount
+            dispatchedRequestsCount,
+            topDistricts,
+            topBuyers
         });
 
     } catch (error) {

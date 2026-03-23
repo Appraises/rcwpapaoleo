@@ -1,4 +1,4 @@
-const { Collection, Client, SystemSetting } = require('../models');
+const { Collection, Client, SystemSetting, Sale } = require('../models');
 const { Op } = require('sequelize');
 
 const SELLING_PRICE_KEY = 'oil_selling_price';
@@ -17,14 +17,14 @@ exports.getFinancialStats = async (req, res) => {
             }]
         });
 
-        let totalVolume = 0;
+        let totalCollectedVolume = 0;
         let totalCost = 0;
 
         collections.forEach(col => {
             const quantity = col.quantity || 0;
             const price = col.Client ? (col.Client.pricePerLiter || 0) : 0;
 
-            totalVolume += quantity;
+            totalCollectedVolume += quantity;
             
             // Ignore cost if the collection was a trade for products (troca)
             if (!(col.observation && col.observation.toLowerCase().includes('troca'))) {
@@ -32,15 +32,30 @@ exports.getFinancialStats = async (req, res) => {
             }
         });
 
-        const totalRevenue = totalVolume * sellingPrice;
-        const totalProfit = totalRevenue - totalCost;
+        // Get all realized sales
+        const sales = await Sale.findAll();
+        let totalSoldVolume = 0;
+        let totalRealizedRevenue = 0;
+
+        sales.forEach(sale => {
+            totalSoldVolume += (sale.quantityLiters || 0);
+            totalRealizedRevenue += (sale.totalValue || 0);
+        });
+
+        const currentInventory = Math.max(0, totalCollectedVolume - totalSoldVolume);
+        const pendingRevenue = currentInventory * sellingPrice;
+        const totalProjectedRevenue = totalRealizedRevenue + pendingRevenue; // Value of what's sold + what is in stock
+        const overallProfit = totalProjectedRevenue - totalCost;
 
         res.json({
             sellingPrice,
-            totalVolume,
-            totalRevenue,
+            totalCollectedVolume,
+            totalSoldVolume,
+            currentInventory,
+            totalRealizedRevenue,
+            pendingRevenue,
             totalCost,
-            totalProfit
+            overallProfit
         });
 
     } catch (error) {

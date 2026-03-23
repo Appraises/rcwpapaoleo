@@ -78,7 +78,7 @@ const CollectionsPage = () => {
                             <tbody>
                                 {collections.map(col => (
                                     <tr key={col.id} style={{ borderBottom: '1px solid #eee', transition: 'background-color 0.2s', ':hover': { backgroundColor: '#f8f9fa' } }}>
-                                        <td style={{ padding: '1rem', fontWeight: '500' }}>{new Date(col.date).toLocaleDateString()}</td>
+                                        <td style={{ padding: '1rem', fontWeight: '500' }}>{new Date(col.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
                                         <td style={{ padding: '1rem', fontWeight: 'bold' }}>{col.Client?.name || 'N/A'}</td>
                                         <td style={{ padding: '1rem', color: '#555' }}>
                                             {col.User?.name || col.User?.email || '-'}

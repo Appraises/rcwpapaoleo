@@ -148,7 +148,7 @@ const ClientDetailPage = () => {
                     <div>
                         <p style={{ color: '#666', fontSize: '0.8rem', margin: 0 }}>Última Coleta</p>
                         <p style={{ fontSize: '1rem', fontWeight: '600', margin: 0, color: '#d97706' }}>
-                            {lastCollection ? lastCollection.toLocaleDateString('pt-BR') : 'Nenhuma'}
+                            {lastCollection ? lastCollection.toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'Nenhuma'}
                         </p>
                     </div>
                 </div>
@@ -267,7 +267,7 @@ const ClientDetailPage = () => {
                                     <tbody>
                                         {collections.map(col => (
                                             <tr key={col.id} style={{ borderBottom: '1px solid #eee' }}>
-                                                <td style={{ padding: '0.75rem' }}>{new Date(col.date).toLocaleDateString('pt-BR')}</td>
+                                                <td style={{ padding: '0.75rem' }}>{new Date(col.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
                                                 <td style={{ padding: '0.75rem', fontWeight: '500' }}>{col.quantity}</td>
                                                 <td style={{ padding: '0.75rem', color: '#555' }}>{col.User?.name || '-'}</td>
                                                 <td style={{ padding: '0.75rem', color: '#666', fontSize: '0.9rem' }}>{col.observation || '-'}</td>

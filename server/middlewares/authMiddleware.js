@@ -19,7 +19,12 @@ const authenticate = (req, res, next) => {
         return res.status(401).json({ error: 'Token malformatted' });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || 'secret_key', (err, decoded) => {
+    if (!process.env.JWT_SECRET) {
+        console.error('CRITICAL: JWT_SECRET is not defined in environment variables.');
+        return res.status(500).json({ error: 'Internal server configuration error' });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) return res.status(401).json({ error: 'Token invalid' });
 
         req.userId = decoded.id;
