@@ -85,40 +85,43 @@ exports.getDashboardStats = async (req, res) => {
         // Top 5 Districts by collection volume
         const topDistrictsRaw = await Collection.findAll({
             attributes: [
+                [col('Client.district'), 'districtName'],
                 [fn('sum', col('quantity')), 'totalQuantity']
             ],
             include: [{
                 model: Client,
-                attributes: ['district']
+                attributes: []
             }],
             group: ['Client.district'],
             order: [[literal('totalQuantity'), 'DESC']],
-            limit: 5
+            limit: 5,
+            raw: true
         });
         
         const topDistricts = topDistrictsRaw.map(item => ({
-            name: item.Client?.district || 'Desconhecido',
-            value: item.get('totalQuantity') || 0
+            name: item.districtName || 'Desconhecido',
+            value: item.totalQuantity || 0
         })).filter(d => d.value > 0);
 
         // Top Buyers by sales volume
         const topBuyersRaw = await Sale.findAll({
             attributes: [
-                'buyerId',
+                [col('Buyer.name'), 'buyerName'],
                 [fn('sum', col('quantityLiters')), 'totalVolume']
             ],
             include: [{
                 model: Buyer,
-                attributes: ['name']
+                attributes: []
             }],
-            group: ['buyerId'],
+            group: ['Buyer.name'],
             order: [[literal('totalVolume'), 'DESC']],
-            limit: 5
+            limit: 5,
+            raw: true
         });
 
         const topBuyers = topBuyersRaw.map(item => ({
-            name: item.Buyer?.name || 'Desconhecido',
-            value: item.get('totalVolume') || 0
+            name: item.buyerName || 'Desconhecido',
+            value: item.totalVolume || 0
         })).filter(b => b.value > 0);
 
         res.json({
