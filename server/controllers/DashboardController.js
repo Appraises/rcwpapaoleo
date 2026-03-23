@@ -87,7 +87,7 @@ exports.getDashboardStats = async (req, res) => {
             attributes: ['quantity'],
             include: [{
                 model: Client,
-                attributes: ['district', 'address']
+                attributes: ['district']
             }],
             raw: true
         });
@@ -109,7 +109,7 @@ exports.getDashboardStats = async (req, res) => {
         const districtOriginals = {}; // normalizedName -> { name: count } to pick most common spelling
 
         allCollectionsWithClient.forEach(row => {
-            const rawDistrict = row['Client.district'] || row['Client.address'] || null;
+            const rawDistrict = row['Client.district'] || null;
             if (!rawDistrict) return;
 
             const normalized = normalizeDistrict(rawDistrict);
