@@ -1,4 +1,4 @@
-const { Client, Collection, CollectionRequest, Sale, Buyer } = require('../models');
+const { Client, Collection, CollectionRequest, Sale, Buyer, Address } = require('../models');
 const { Op, fn, col, literal } = require('sequelize');
 const { exec } = require('child_process');
 
@@ -87,7 +87,12 @@ exports.getDashboardStats = async (req, res) => {
             attributes: ['quantity'],
             include: [{
                 model: Client,
-                attributes: ['district']
+                attributes: ['district'],
+                include: [{
+                    model: Address,
+                    attributes: ['district'],
+                    required: false
+                }]
             }],
             raw: true
         });
@@ -109,7 +114,7 @@ exports.getDashboardStats = async (req, res) => {
         const districtOriginals = {}; // normalizedName -> { name: count } to pick most common spelling
 
         allCollectionsWithClient.forEach(row => {
-            const rawDistrict = row['Client.district'] || null;
+            const rawDistrict = row['Client.Address.district'] || row['Client.district'] || null;
             if (!rawDistrict) return;
 
             const normalized = normalizeDistrict(rawDistrict);
