@@ -27,7 +27,6 @@ const runChurnCheck = async () => {
         },
         include: [{
             model: Collection,
-            as: 'collections', // using lowercase 'collections' as default unless explicitly named 'Collections'
             attributes: ['date'],
             order: [['date', 'DESC']],
             limit: 1 // We only need the latest collection
@@ -40,8 +39,8 @@ const runChurnCheck = async () => {
     for (const client of clients) {
         // Find latest collection date
         let latestDate = null;
-        if (client.collections && client.collections.length > 0) {
-            latestDate = new Date(client.collections[0].date);
+        if (client.Collections && client.Collections.length > 0) {
+            latestDate = new Date(client.Collections[0].date);
         } else {
             // If they never had a collection, we use their creation date as baseline
             latestDate = new Date(client.createdAt);
