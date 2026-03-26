@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import CollectionModal from '../components/CollectionModal';
 import toast from 'react-hot-toast';
@@ -9,6 +10,7 @@ const CollectionsPage = () => {
     const [collections, setCollections] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const navigate = useNavigate();
 
     const fetchCollections = async () => {
         try {
@@ -79,12 +81,24 @@ const CollectionsPage = () => {
                                 {collections.map(col => (
                                     <tr key={col.id} style={{ borderBottom: '1px solid #eee', transition: 'background-color 0.2s', ':hover': { backgroundColor: '#f8f9fa' } }}>
                                         <td style={{ padding: '1rem', fontWeight: '500' }}>{new Date(col.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
-                                        <td style={{ padding: '1rem', fontWeight: 'bold' }}>{col.Client?.name || 'N/A'}</td>
+                                        <td style={{ padding: '1rem', fontWeight: 'bold' }}>
+                                            <span
+                                                onClick={() => col.Client?.id && navigate(`/clients/${col.Client.id}`)}
+                                                style={{ cursor: col.Client?.id ? 'pointer' : 'default', color: col.Client?.id ? '#2563eb' : 'inherit', textDecoration: col.Client?.id ? 'underline' : 'none', transition: 'color 0.2s' }}
+                                                onMouseOver={e => { if (col.Client?.id) e.currentTarget.style.color = '#1d4ed8'; }}
+                                                onMouseOut={e => { if (col.Client?.id) e.currentTarget.style.color = '#2563eb'; }}
+                                            >
+                                                {col.Client?.name || 'N/A'}
+                                            </span>
+                                        </td>
                                         <td style={{ padding: '1rem', color: '#555' }}>
                                             {col.User?.name || col.User?.email || '-'}
                                         </td>
                                         <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{col.quantity}</td>
-                                        <td style={{ padding: '1rem', color: '#666' }}>{col.observation || '-'}</td>
+                                        <td style={{ padding: '1rem', color: '#666' }}>
+                                            {col.isTrocaDescarte && <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fef2f2', color: '#991b1b', fontSize: '0.75rem', fontWeight: '600', marginRight: '0.5rem' }}>TROCA/DESCARTE</span>}
+                                            {col.observation || (col.isTrocaDescarte ? '' : '-')}
+                                        </td>
                                         <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                                             <button onClick={() => handleDelete(col.id)} style={{ padding: '0.5rem', borderRadius: '4px', backgroundColor: '#fee2e2', color: '#b91c1c', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', outline: 'none' }}>
                                                 <Trash2 size={18} />

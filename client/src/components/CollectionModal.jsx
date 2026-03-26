@@ -8,7 +8,8 @@ const CollectionModal = ({ clientId, onClose, onSuccess }) => {
     const [formData, setFormData] = useState({
         date: new Date().toISOString().split('T')[0],
         quantity: '',
-        observation: ''
+        observation: '',
+        isTrocaDescarte: false
     });
     const [selectedClientId, setSelectedClientId] = useState(clientId || '');
     const [selectedUserId, setSelectedUserId] = useState(user?.id || '');
@@ -130,6 +131,18 @@ const CollectionModal = ({ clientId, onClose, onSuccess }) => {
                             required
                             style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
                         />
+                    </div>
+
+                    <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: formData.isTrocaDescarte ? '#fef2f2' : '#f8fafc', borderRadius: 'var(--border-radius)', border: formData.isTrocaDescarte ? '2px solid #ef4444' : '1px solid #e2e8f0', cursor: 'pointer', userSelect: 'none', transition: 'all 0.2s ease' }} onClick={() => setFormData(prev => ({ ...prev, isTrocaDescarte: !prev.isTrocaDescarte }))}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '22px', height: '22px', borderRadius: '4px', border: formData.isTrocaDescarte ? '2px solid #ef4444' : '2px solid #d4d4d8', backgroundColor: formData.isTrocaDescarte ? '#ef4444' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease', flexShrink: 0 }}>
+                                {formData.isTrocaDescarte && <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}>✓</span>}
+                            </div>
+                            <div>
+                                <span style={{ fontWeight: '600', color: formData.isTrocaDescarte ? '#991b1b' : '#334155', fontSize: '0.9rem' }}>Troca ou Descarte</span>
+                                <p style={{ fontSize: '0.78rem', color: formData.isTrocaDescarte ? '#b91c1c' : '#64748b', margin: '2px 0 0 0' }}>Sem custo de aquisição — o óleo entra no estoque mas não gera valor a pagar.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div style={{ marginBottom: '1.5rem' }}>

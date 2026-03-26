@@ -20,6 +20,11 @@ const Collection = sequelize.define('Collection', {
         type: DataTypes.TEXT,
         allowNull: true,
     },
+    isTrocaDescarte: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: 'When true, no acquisition cost is applied for this collection'
+    },
 });
 
 module.exports = Collection;

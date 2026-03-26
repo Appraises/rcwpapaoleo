@@ -10,6 +10,7 @@ const ReportsPage = () => {
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [activeTab, setActiveTab] = useState('weekly');
+    const [reportFilter, setReportFilter] = useState('all');
 
     useEffect(() => {
         fetchReports();
@@ -31,8 +32,13 @@ const ReportsPage = () => {
     const handleForceGenerate = async (type) => {
         try {
             setGenerating(true);
-            await api.post('/reports/generate', { type });
-            toast.success(`Relatório ${type === 'weekly' ? 'Semanal' : 'Mensal'} gerado com sucesso!`);
+            const body = { type };
+            if (reportFilter === 'abrasel') {
+                body.filter = 'abrasel';
+            }
+            await api.post('/reports/generate', body);
+            const filterLabel = reportFilter === 'abrasel' ? ' (Abrasel)' : '';
+            toast.success(`Relatório ${type === 'weekly' ? 'Semanal' : 'Mensal'}${filterLabel} gerado com sucesso!`);
             fetchReports(); // Refresh the list
         } catch (error) {
             console.error('Error generating report:', error);
@@ -55,7 +61,19 @@ const ReportsPage = () => {
         <div style={{ padding: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h2 style={{ fontSize: '1.8rem', color: 'var(--color-text)' }}>Central de Relatórios PDF</h2>
-                <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <select
+                        value={reportFilter}
+                        onChange={(e) => setReportFilter(e.target.value)}
+                        style={{
+                            padding: '0.75rem 1rem', borderRadius: 'var(--border-radius)',
+                            border: '1px solid #cbd5e1', backgroundColor: 'white',
+                            fontSize: '0.9rem', color: '#334155', cursor: 'pointer'
+                        }}
+                    >
+                        <option value="all">Todos os Clientes</option>
+                        <option value="abrasel">Apenas Abrasel</option>
+                    </select>
                     <button
                         onClick={() => handleForceGenerate('weekly')}
                         disabled={generating}

@@ -26,8 +26,8 @@ exports.getFinancialStats = async (req, res) => {
 
             totalCollectedVolume += quantity;
             
-            // Ignore cost if the collection was a trade for products (troca)
-            if (!(col.observation && col.observation.toLowerCase().includes('troca'))) {
+            // Ignore cost if the collection was a trade/discard (troca ou descarte)
+            if (!col.isTrocaDescarte) {
                 totalCost += quantity * price;
             }
         });

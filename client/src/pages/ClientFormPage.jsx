@@ -115,7 +115,8 @@ const ClientFormPage = () => {
         has70L: false,
         has100L: false,
         has150L: false,
-        recurrenceDays: ''
+        recurrenceDays: '',
+        isAbrasel: false
     });
     const [error, setError] = useState('');
     const [docError, setDocError] = useState('');
@@ -288,6 +289,7 @@ const ClientFormPage = () => {
                         has100L: client.has100L || false,
                         has150L: client.has150L || false,
                         recurrenceDays: client.recurrenceDays || '',
+                        isAbrasel: client.isAbrasel || false,
                     });
                 } catch (err) {
                     setError('Erro ao carregar dados do cliente.');
@@ -675,6 +677,18 @@ const ClientFormPage = () => {
                                 style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--border-radius)', border: '1px solid #ddd' }}
                             />
                             <small style={{ color: '#666' }}>Deixe vazio para não enviar alertas de recorrência.</small>
+                        </div>
+                    </div>
+
+                    <div style={{ marginTop: '1rem', padding: '1.25rem', backgroundColor: '#fefce8', borderRadius: 'var(--border-radius)', border: formData.isAbrasel ? '2px solid #f59e0b' : '1px solid #fde68a', cursor: 'pointer', userSelect: 'none', transition: 'all 0.2s ease' }} onClick={() => setFormData(prev => ({ ...prev, isAbrasel: !prev.isAbrasel }))}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '22px', height: '22px', borderRadius: '4px', border: formData.isAbrasel ? '2px solid #f59e0b' : '2px solid #d4d4d8', backgroundColor: formData.isAbrasel ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease', flexShrink: 0 }}>
+                                {formData.isAbrasel && <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}>✓</span>}
+                            </div>
+                            <div>
+                                <span style={{ fontWeight: '600', color: '#92400e', fontSize: '0.95rem' }}>Cliente Abrasel</span>
+                                <p style={{ fontSize: '0.8rem', color: '#a16207', margin: '2px 0 0 0' }}>Marque se este cliente pertence à Abrasel para filtrar nos relatórios.</p>
+                            </div>
                         </div>
                     </div>
 

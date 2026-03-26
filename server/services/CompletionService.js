@@ -159,7 +159,8 @@ async function processCompletionMessage(collectorUserId, messageText, remoteJid,
                             userId: collector.id,
                             date: new Date(),
                             quantity: qty,
-                            observation: entry.isTroca ? 'Coleta registrada via troca de produtos via WhatsApp' : 'Coleta registrada com litros reais via WhatsApp'
+                            observation: entry.isTroca ? 'Coleta registrada via troca de produtos via WhatsApp' : 'Coleta registrada com litros reais via WhatsApp',
+                            isTrocaDescarte: !!entry.isTroca
                         });
                     }
                     completedCount++;

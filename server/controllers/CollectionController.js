@@ -56,7 +56,7 @@ exports.getAllCollections = async (req, res) => {
             include: [
                 {
                     model: Client,
-                    attributes: ['name']
+                    attributes: ['id', 'name']
                 },
                 {
                     model: User,

@@ -86,6 +86,11 @@ const Client = sequelize.define('Client', {
         type: DataTypes.DATE,
         allowNull: true,
         comment: 'Date when the last churn memory was sent'
+    },
+    isAbrasel: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: 'Whether this client belongs to Abrasel'
     }
 });
 

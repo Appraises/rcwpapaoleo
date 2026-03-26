@@ -209,9 +209,12 @@ Responda APENAS com a palavra SIM ou NAO. Nenhuma pontuação, justificativa ou 
             const prompt = `Você é um assistente que analisa mensagens de coletadores de óleo.
 A sua função é classificar se a mensagem informa que o coletador concluiu a sua rota e quantos litros recolheu.
 
-Exemplos de classificação LITROS (lista com litros coletados, com a opção de registrar que foi troca por produtos. Mapeie na forma X:Y ou X:Y:TROCA, espaço como separador):
+Exemplos de classificação LITROS (lista com litros coletados, com a opção de registrar que foi troca por produtos ou descarte. Mapeie na forma X:Y ou X:Y:TROCA ou X:Y:DESCARTE, espaço como separador):
 "1. 15\n2. 20 TROCA\n3. 0" -> LITROS 1:15 2:20:TROCA 3:0
 "parada 1: 10\nparada 2: 25L (troca)" -> LITROS 1:10 2:25:TROCA
+"1. 30\n2. descarte 15\n3. 10" -> LITROS 1:30 2:15:DESCARTE 3:10
+"1. 20 descarte\n2. 40" -> LITROS 1:20:DESCARTE 2:40
+"1: 10 troca\n2: 15 descarte\n3: 25" -> LITROS 1:10:TROCA 2:15:DESCARTE 3:25
 
 Exemplos de classificação TODOS (coletou todos os pontos, mas não especificou litros):
 "coletei todos" -> TODOS
@@ -234,7 +237,7 @@ Exemplos de classificação NAO (mensagem comum, não é encerramento da rota):
 "estou indo pro primeiro" -> NAO
 
 Mensagem do coletador: "${cleanMessage}"
-Responda APENAS com a palavra TODOS, ATÉ N (onde N é o número), LITROS X:Y ou LITROS X:Y:TROCA (onde X é o número da parada e Y a quantidade), ou NAO. Nenhuma pontuação ou texto extra.`;
+Responda APENAS com a palavra TODOS, ATÉ N (onde N é o número), LITROS X:Y ou LITROS X:Y:TROCA ou LITROS X:Y:DESCARTE (onde X é o número da parada e Y a quantidade), ou NAO. Nenhuma pontuação ou texto extra.`;
 
             const reply = await LlmService._classify(prompt);
 
@@ -251,14 +254,14 @@ Responda APENAS com a palavra TODOS, ATÉ N (onde N é o número), LITROS X:Y ou
             // Match "LITROS 1:15 2:20:TROCA"
             if (reply.includes('LITROS')) {
                 const entries = [];
-                // Look for pairs of numbers separated by a colon, e.g., "1:15", "2:20:TROCA"
-                const regex = /(\d+):(\d+)(?::(TROCA))?/g;
+                // Look for pairs of numbers separated by a colon, e.g., "1:15", "2:20:TROCA", "3:10:DESCARTE"
+                const regex = /(\d+):(\d+)(?::(TROCA|DESCARTE))?/g;
                 let match;
                 while ((match = regex.exec(reply)) !== null) {
                     entries.push({
                         stop: parseInt(match[1], 10),
                         liters: parseInt(match[2], 10),
-                        isTroca: match[3] === 'TROCA'
+                        isTroca: match[3] === 'TROCA' || match[3] === 'DESCARTE'
                     });
                 }
                 if (entries.length > 0) {

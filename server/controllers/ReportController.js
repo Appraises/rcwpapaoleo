@@ -15,7 +15,7 @@ exports.listReports = async (req, res) => {
 
 exports.forceGenerate = async (req, res) => {
     try {
-        const { type } = req.body; // 'weekly' or 'monthly'
+        const { type, filter } = req.body; // 'weekly' or 'monthly', optional filter
 
         const now = new Date();
         let startDate, endDate;
@@ -40,7 +40,12 @@ exports.forceGenerate = async (req, res) => {
         startDate.setHours(0, 0, 0, 0);
         endDate.setHours(23, 59, 59, 999);
 
-        const report = await ReportService.generateReport(type, startDate, endDate);
+        const options = {};
+        if (filter === 'abrasel') {
+            options.abraselOnly = true;
+        }
+
+        const report = await ReportService.generateReport(type, startDate, endDate, options);
         res.json({ message: 'Report generated manually', report });
     } catch (error) {
         console.error('Error forcefully generating report:', error);

@@ -7,9 +7,15 @@ const { ptBR } = require('date-fns/locale');
 const { Collection, Client, User, SystemSetting, Report, Sale, Buyer } = require('../models');
 
 class ReportService {
-    static async generateReport(type, startDate, endDate) {
+    static async generateReport(type, startDate, endDate, options = {}) {
         try {
             // 1. Fetch Collections
+            const clientInclude = { model: Client, attributes: ['name', 'pricePerLiter', 'isAbrasel'] };
+            if (options.abraselOnly) {
+                clientInclude.where = { isAbrasel: true };
+                clientInclude.required = true;
+            }
+
             const collections = await Collection.findAll({
                 where: {
                     date: {
@@ -17,7 +23,7 @@ class ReportService {
                     }
                 },
                 include: [
-                    { model: Client, attributes: ['name', 'pricePerLiter'] },
+                    clientInclude,
                     { model: User, attributes: ['name'] }
                 ],
                 order: [['date', 'ASC']]
@@ -47,7 +53,7 @@ class ReportService {
             const tableData = collections.map(col => {
                 const quantity = col.quantity || 0;
                 const price = col.Client ? (col.Client.pricePerLiter || 0) : 0;
-                const isTroca = col.observation && col.observation.toLowerCase().includes('troca');
+                const isTroca = col.isTrocaDescarte;
 
                 totalVolume += quantity;
                 if (!isTroca) {
@@ -56,7 +62,7 @@ class ReportService {
 
                 return {
                     date: format(new Date(col.date), 'dd/MM/yyyy'),
-                    client: col.Client ? (isTroca ? `${col.Client.name} (Troca)` : col.Client.name) : 'Desconhecido',
+                    client: col.Client ? (isTroca ? `${col.Client.name} (Troca/Descarte)` : col.Client.name) : 'Desconhecido',
                     quantity: `${quantity} L`,
                     collector: col.User ? col.User.name : 'Desconhecido'
                 };
@@ -87,7 +93,8 @@ class ReportService {
             });
 
             // 6. Setup PDF Document
-            const fileName = `relatorio-${type}-${Date.now()}.pdf`;
+            const abraselSuffix = options.abraselOnly ? '-abrasel' : '';
+            const fileName = `relatorio-${type}${abraselSuffix}-${Date.now()}.pdf`;
             const filePath = path.join(__dirname, '..', 'public', 'reports', fileName);
 
             // Ensure directory exists
@@ -113,10 +120,13 @@ class ReportService {
                 doc.fillColor('white').fontSize(24).font('Helvetica-Bold').text('RCW Papa Óleo', 50, 35);
             }
 
+            const reportLabel = type === 'weekly' ? 'Semanal' : 'Mensal';
+            const abraselLabel = options.abraselOnly ? ' — Abrasel' : '';
+
             doc.fillColor('white')
                 .fontSize(12)
                 .font('Helvetica-Bold')
-                .text(`Relatório ${type === 'weekly' ? 'Semanal' : 'Mensal'}`, 200, 30, { align: 'right' })
+                .text(`Relatório ${reportLabel}${abraselLabel}`, 200, 30, { align: 'right' })
                 .font('Helvetica')
                 .text(`Período: ${format(startDate, 'dd/MM/yyyy')} a ${format(endDate, 'dd/MM/yyyy')}`, 200, 50, { align: 'right' });
 
