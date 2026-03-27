@@ -81,12 +81,35 @@ const CollectionsPage = () => {
                                 {collections.map(col => (
                                     <tr key={col.id} style={{ borderBottom: '1px solid #eee', transition: 'background-color 0.2s', ':hover': { backgroundColor: '#f8f9fa' } }}>
                                         <td style={{ padding: '1rem', fontWeight: '500' }}>{new Date(col.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
-                                        <td style={{ padding: '1rem', fontWeight: 'bold' }}>
+                                        <td style={{ padding: '1rem' }}>
                                             <span
                                                 onClick={() => col.Client?.id && navigate(`/clients/${col.Client.id}`)}
-                                                style={{ cursor: col.Client?.id ? 'pointer' : 'default', color: col.Client?.id ? '#2563eb' : 'inherit', textDecoration: col.Client?.id ? 'underline' : 'none', transition: 'color 0.2s' }}
-                                                onMouseOver={e => { if (col.Client?.id) e.currentTarget.style.color = '#1d4ed8'; }}
-                                                onMouseOut={e => { if (col.Client?.id) e.currentTarget.style.color = '#2563eb'; }}
+                                                style={{
+                                                    cursor: col.Client?.id ? 'pointer' : 'default',
+                                                    color: col.Client?.id ? '#60a5fa' : 'var(--color-text)',
+                                                    backgroundColor: col.Client?.id ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                                                    border: col.Client?.id ? '1px solid rgba(59, 130, 246, 0.2)' : 'none',
+                                                    padding: col.Client?.id ? '4px 10px' : '0',
+                                                    borderRadius: '6px',
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: '600',
+                                                    display: 'inline-block',
+                                                    transition: 'all 0.2s ease',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px'
+                                                }}
+                                                onMouseOver={e => {
+                                                    if (col.Client?.id) {
+                                                        e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+                                                        e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                                                    }
+                                                }}
+                                                onMouseOut={e => {
+                                                    if (col.Client?.id) {
+                                                        e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                                                        e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.2)';
+                                                    }
+                                                }}
                                             >
                                                 {col.Client?.name || 'N/A'}
                                             </span>
