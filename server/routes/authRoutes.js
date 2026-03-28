@@ -5,11 +5,14 @@ const userController = require('../controllers/UserController');
 const auth = require('../middlewares/authMiddleware');
 const { requireAdmin } = require('../middlewares/authMiddleware');
 
-router.post('/register', authController.register);
+// Public — only login
 router.post('/login', authController.login);
-router.get('/users', authController.getAllUsers);
 
-// User Management Routes (admin only)
+// Protected — requires authentication
+router.get('/users', auth, authController.getAllUsers);
+
+// Admin only — register new users and user management
+router.post('/register', auth, requireAdmin, authController.register);
 router.post('/users', auth, requireAdmin, userController.createUser);
 router.put('/users/:id', auth, requireAdmin, userController.updateUser);
 router.delete('/users/:id', auth, requireAdmin, userController.deleteUser);

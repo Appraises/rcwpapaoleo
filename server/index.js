@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
+const rateLimit = require('express-rate-limit');
 
 const { syncDatabase } = require('./models');
 
@@ -33,12 +34,59 @@ syncDatabase().then(() => {
     initCronJobs();
 });
 
-app.use(cors());
+// ── CORS — restrict to allowed origins ──────────────────────────────
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+    .split(',')
+    .map(o => o.trim());
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error('Bloqueado pela política de CORS'));
+    },
+    credentials: true,
+}));
+
+// ── Rate Limiting ───────────────────────────────────────────────────
+// General limiter for all API routes
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100,                  // 100 requests per window per IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Muitas requisições. Tente novamente em alguns minutos.' },
+});
+
+// Strict limiter for auth endpoints (login/register)
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10,                   // 10 attempts per window per IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+});
+
+// Webhook limiter (more generous but still bounded)
+const webhookLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 30,                   // 30 requests per minute per IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Rate limit exceeded for webhook.' },
+});
+
 app.use(express.json());
 
-// Public Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/webhooks', webhookRoutes);
+// Apply general rate limiter to all /api routes
+app.use('/api', generalLimiter);
+
+// Public Routes (with specific rate limiters)
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/webhooks', webhookLimiter, webhookRoutes);
 app.use('/api/evolution', evolutionRoutes);
 app.use('/api/public/reports', express.static(path.join(__dirname, 'public/reports')));
 

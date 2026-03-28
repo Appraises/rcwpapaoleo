@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middlewares/authMiddleware');
+const { requireAdmin } = require('../middlewares/authMiddleware');
 const { SystemSetting } = require('../models');
 const GeocodingService = require('../services/GeocodingService');
 
@@ -24,7 +25,7 @@ router.get('/geocode', authMiddleware, async (req, res) => {
 });
 
 // GET /api/settings — retrieve all settings (or specific keys)
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, requireAdmin, async (req, res) => {
     try {
         const { keys } = req.query;
         const where = keys ? { key: keys.split(',') } : {};
@@ -40,7 +41,7 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // PUT /api/settings — bulk upsert settings { key: value, key: value, ... }
-router.put('/', authMiddleware, async (req, res) => {
+router.put('/', authMiddleware, requireAdmin, async (req, res) => {
     try {
         const entries = req.body;
         for (const [key, value] of Object.entries(entries)) {
@@ -59,12 +60,12 @@ router.put('/', authMiddleware, async (req, res) => {
 });
 
 // GET /api/settings/maps-key - securely expose maps api key to authenticated frontend
-router.get('/maps-key', authMiddleware, (req, res) => {
+router.get('/maps-key', authMiddleware, requireAdmin, (req, res) => {
     res.json({ key: process.env.GOOGLE_MAPS_API_KEY || '' });
 });
 
 // POST /api/settings/backup - trigger manual database backup
-router.post('/backup', authMiddleware, async (req, res) => {
+router.post('/backup', authMiddleware, requireAdmin, async (req, res) => {
     try {
         const { backupDatabase } = require('../services/BackupService');
         const result = await backupDatabase();
