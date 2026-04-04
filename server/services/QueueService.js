@@ -4,6 +4,7 @@
 
 const LlmService = require('./LlmService');
 const EvolutionService = require('./EvolutionService');
+const MessageVariation = require('../utils/MessageVariation');
 const { CollectionRequest, Client } = require('../models');
 const { Op } = require('sequelize');
 
@@ -105,7 +106,7 @@ class QueueService {
                     console.log(`[QueueService] ⚠️ Duplicate collection request ignored for client ${task.clientId} (Status: ${existingRequest.status})`);
 
                     if (client.phone) {
-                        const duplicateMessage = `Olá, ${client.name}! ♻️\n\nNós já recebemos o seu pedido de coleta recentemente e nossa equipe passará em breve para recolher o seu óleo.\n\nA equipe RCW Papa Óleo agradece o aviso!`;
+                        const duplicateMessage = MessageVariation.collection.duplicate(client.name);
                         const humanizedDuplicate = EvolutionService.humanizeMessage(duplicateMessage);
                         console.log(`[QueueService] 🔄 Humanized (Duplicate): "${humanizedDuplicate.substring(0, 80)}..."`);
 
@@ -123,7 +124,7 @@ class QueueService {
 
                     // 4. Build and humanize the reply
                     if (client.phone) {
-                        const baseMessage = `Olá, ${client.name}! ♻️\n\nSeu pedido de coleta foi registrado pelo nosso assistente virtual.\nNossos coletadores já foram avisados e o seu óleo será recolhido o mais breve possível!\n\nA equipe RCW Papa Óleo agradece a sua colaboração.`;
+                        const baseMessage = MessageVariation.collection.confirmation(client.name);
                         const humanized = EvolutionService.humanizeMessage(baseMessage);
                         console.log(`[QueueService] 🔄 Humanized: "${humanized.substring(0, 80)}..."`);
 

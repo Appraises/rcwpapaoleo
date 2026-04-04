@@ -10,19 +10,27 @@ function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)
 
 // ─── Synonym dictionary for message humanization ─────────────────────
 const SYNONYMS = {
-    'Olá': ['Oi'],
-    'registrado': ['anotado', 'salvo', 'cadastrado'],
-    'assistente virtual': ['sistema automático', 'robô', 'bot'],
-    'avisados': ['notificados', 'informados', 'alertados'],
-    'o mais breve possível': ['em breve', 'o quanto antes', 'logo logo', 'rapidinho'],
-    'agradece': ['agradece muito', 'é grata por', 'agradece de coração'],
-    'colaboração': ['parceria', 'contribuição', 'ajuda'],
-    'pedido de coleta': ['solicitação de coleta', 'pedido de retirada', 'solicitação de recolhimento'],
-    'recolhido': ['coletado', 'retirado', 'buscado'],
-    'coletadores': ['coletores', 'motoristas', 'equipe de campo'],
+    'Olá': ['Oi', 'Fala aí', 'Opa', 'Tudo bem?', 'E aí', 'Fala', 'Como vai?', 'Saudações'],
+    'registrado': ['anotado', 'salvo', 'cadastrado', 'confirmado', 'marcado no sistema', 'lançado aqui', 'já no sistema', 'devidamente anotado'],
+    'assistente virtual': ['sistema automático', 'robô', 'bot', 'atendente digital', 'automação', 'sistema'],
+    'avisados': ['notificados', 'informados', 'alertados', 'comunicados', 'cientes'],
+    'o mais breve possível': ['em breve', 'o quanto antes', 'logo logo', 'rapidinho', 'logo em seguida', 'já já', 'sem demora'],
+    'agradece': ['agradece muito', 'é grata por', 'agradece de coração', 'agradece a sua', 'fica muito feliz por'],
+    'colaboração': ['parceria', 'contribuição', 'ajuda', 'apoio', 'força'],
+    'pedido de coleta': ['solicitação de coleta', 'pedido de retirada', 'solicitação de recolhimento', 'chamado para coletar', 'resgate de óleo'],
+    'recolhido': ['coletado', 'retirado', 'buscado', 'levado', 'apanhado'],
+    'coletadores': ['coletores', 'motoristas', 'equipe de campo', 'rapazes da coleta', 'pessoal da coleta', 'nossa equipe externa'],
+    'Tudo bem?': ['Tudo joia?', 'Tudo certo?', 'Como você está?', 'Como vão as coisas?'],
+    'Bom dia': ['Bom diaa', 'Opa, bom dia', 'Fala, bom dia'],
+    'Boa tarde': ['Boa tardee', 'Opa, boa tarde', 'Fala, boa tarde'],
+    'Boa noite': ['Boa noitee', 'Opa, boa noite', 'Fala, boa noite', 'Excelente noite'],
+    'hoje': ['no dia de hoje', 'nesta data', 'agora', 'hoje mesmo'],
+    'sucesso': ['êxito', 'tranquilidade', 'perfeição'],
+    'Valeu': ['Obrigado', 'Agradeço', 'Muito obrigado', 'Valeuzão', 'Gratidão', 'Um abraço'],
+    'óleo': ['óleo de cozinha', 'óleo usado', 'resíduo', 'óleo vegetal', 'material']
 };
 
-const EMOJI_VARIATIONS = ['♻️', '🌱', '🛢️', '💚', '🌿', '✅'];
+const EMOJI_VARIATIONS = ['♻️', '🌱', '🛢️', '💚', '🌿', '✅', '🙏', '🙌', '👍', '💪', '🚚', '🚛'];
 const ZERO_WIDTH_SPACE = '\u200B';
 
 class EvolutionService {
