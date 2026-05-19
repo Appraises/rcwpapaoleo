@@ -185,10 +185,6 @@ const SettingsPage = () => {
                 base_lat: baseLat,
                 base_lng: baseLng
             });
-            // Also keep localStorage in sync for RoutePage
-            localStorage.setItem('rcwpapaoleo_base_name', baseName);
-            localStorage.setItem('rcwpapaoleo_base_lat', baseLat);
-            localStorage.setItem('rcwpapaoleo_base_lng', baseLng);
             setBaseSaved(true);
             setTimeout(() => setBaseSaved(false), 2500);
         } catch (error) {

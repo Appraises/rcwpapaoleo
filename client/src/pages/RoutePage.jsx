@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Polyline } from '@react-google-maps/api';
 import api from '../api/axios';
-import { Truck, Navigation, MapPin, CheckSquare, Square, RotateCcw, Zap, Home, Settings2 } from 'lucide-react';
+import { Truck, Navigation, MapPin, CheckSquare, Square, RotateCcw, Zap, Home, Settings2, Loader2 } from 'lucide-react';
 import { calculateOptimalRoute } from '../utils/routeOptimizer';
 import toast from 'react-hot-toast';
 
@@ -164,24 +164,44 @@ const RoutePage = () => {
     const [apiKey, setApiKey] = useState('');
     const mapRef = useRef(null);
 
-    // Base/HQ location — persisted in localStorage
-    const [baseLat, setBaseLat] = useState(() => {
-        const saved = localStorage.getItem('rcwpapaoleo_base_lat');
-        return saved ? parseFloat(saved) : DEFAULT_BASE.lat;
-    });
-    const [baseLng, setBaseLng] = useState(() => {
-        const saved = localStorage.getItem('rcwpapaoleo_base_lng');
-        return saved ? parseFloat(saved) : DEFAULT_BASE.lng;
-    });
-    const [baseName, setBaseName] = useState(() => {
-        return localStorage.getItem('rcwpapaoleo_base_name') || DEFAULT_BASE.name;
-    });
+    // Base/HQ location — persisted in database (SystemSettings)
+    const [baseLat, setBaseLat] = useState(DEFAULT_BASE.lat);
+    const [baseLng, setBaseLng] = useState(DEFAULT_BASE.lng);
+    const [baseName, setBaseName] = useState(DEFAULT_BASE.name);
+    const [savingBase, setSavingBase] = useState(false);
 
-    const saveBase = () => {
-        localStorage.setItem('rcwpapaoleo_base_lat', baseLat.toString());
-        localStorage.setItem('rcwpapaoleo_base_lng', baseLng.toString());
-        localStorage.setItem('rcwpapaoleo_base_name', baseName);
-        setShowBaseConfig(false);
+    // Fetch base coordinates from the server on mount
+    useEffect(() => {
+        const fetchBase = async () => {
+            try {
+                const res = await api.get('/settings?keys=base_lat,base_lng,base_name');
+                const s = res.data;
+                if (s.base_lat) setBaseLat(parseFloat(s.base_lat));
+                if (s.base_lng) setBaseLng(parseFloat(s.base_lng));
+                if (s.base_name) setBaseName(s.base_name);
+            } catch (error) {
+                console.error('Error fetching base settings:', error);
+            }
+        };
+        fetchBase();
+    }, []);
+
+    const saveBase = async () => {
+        setSavingBase(true);
+        try {
+            await api.put('/settings', {
+                base_lat: baseLat.toString(),
+                base_lng: baseLng.toString(),
+                base_name: baseName
+            });
+            toast.success('Base salva com sucesso!');
+            setShowBaseConfig(false);
+        } catch (error) {
+            console.error('Error saving base:', error);
+            toast.error('Erro ao salvar base.');
+        } finally {
+            setSavingBase(false);
+        }
     };
 
     // Fetch API Key
@@ -432,14 +452,18 @@ const RoutePage = () => {
                             </div>
                             <button
                                 onClick={saveBase}
+                                disabled={savingBase}
                                 style={{
                                     width: '100%', padding: '0.45rem', fontSize: '0.8rem',
                                     backgroundColor: 'var(--color-primary)', color: 'white',
                                     border: 'none', borderRadius: '6px', fontWeight: '600',
-                                    cursor: 'pointer',
+                                    cursor: savingBase ? 'not-allowed' : 'pointer',
+                                    opacity: savingBase ? 0.7 : 1,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem',
                                 }}
                             >
-                                Salvar Base
+                                {savingBase && <Loader2 size={14} className="animate-spin" />}
+                                {savingBase ? 'Salvando...' : 'Salvar Base'}
                             </button>
                         </div>
                     )}
