@@ -174,7 +174,7 @@ const RoutePage = () => {
     useEffect(() => {
         const fetchBase = async () => {
             try {
-                const res = await api.get('/settings?keys=base_lat,base_lng,base_name');
+                const res = await api.get('/settings/base');
                 const s = res.data;
                 if (s.base_lat) setBaseLat(parseFloat(s.base_lat));
                 if (s.base_lng) setBaseLng(parseFloat(s.base_lng));

@@ -60,9 +60,9 @@ const SettingsPage = () => {
     const [dispatchResult, setDispatchResult] = useState(null);
 
     // Company info
-    const [companyName, setCompanyName] = useState(() => localStorage.getItem('rcwpapaoleo_company_name') || '');
-    const [companyCnpj, setCompanyCnpj] = useState(() => formatCNPJ(localStorage.getItem('rcwpapaoleo_company_cnpj') || ''));
-    const [companyPhone, setCompanyPhone] = useState(() => formatPhone(localStorage.getItem('rcwpapaoleo_company_phone') || ''));
+    const [companyName, setCompanyName] = useState('');
+    const [companyCnpj, setCompanyCnpj] = useState('');
+    const [companyPhone, setCompanyPhone] = useState('');
     const [companySaved, setCompanySaved] = useState(false);
 
     // Logs state
@@ -102,7 +102,7 @@ const SettingsPage = () => {
 
     const fetchSettings = async () => {
         try {
-            const res = await api.get('/settings?keys=base_lat,base_lng,base_name,dispatch_primary_collector_id,dispatch_secondary_collector_id,dispatch_owner_phone,dispatch_business_start,dispatch_business_end');
+            const res = await api.get('/settings?keys=base_lat,base_lng,base_name,dispatch_primary_collector_id,dispatch_secondary_collector_id,dispatch_owner_phone,dispatch_business_start,dispatch_business_end,company_name,company_cnpj,company_phone');
             const s = res.data;
             if (s.base_name) setBaseName(s.base_name);
             if (s.base_lat) setBaseLat(s.base_lat);
@@ -112,6 +112,9 @@ const SettingsPage = () => {
             if (s.dispatch_owner_phone) setOwnerPhone(formatPhone(s.dispatch_owner_phone));
             if (s.dispatch_business_start) setDispatchBusinessStart(s.dispatch_business_start);
             if (s.dispatch_business_end) setDispatchBusinessEnd(s.dispatch_business_end);
+            if (s.company_name) setCompanyName(s.company_name);
+            if (s.company_cnpj) setCompanyCnpj(formatCNPJ(s.company_cnpj));
+            if (s.company_phone) setCompanyPhone(formatPhone(s.company_phone));
         } catch (error) {
             console.error('Error fetching settings:', error);
         }
@@ -227,13 +230,20 @@ const SettingsPage = () => {
         }, 'warning');
     };
 
-    const handleSaveCompany = (e) => {
+    const handleSaveCompany = async (e) => {
         e.preventDefault();
-        localStorage.setItem('rcwpapaoleo_company_name', companyName);
-        localStorage.setItem('rcwpapaoleo_company_cnpj', companyCnpj);
-        localStorage.setItem('rcwpapaoleo_company_phone', companyPhone);
-        setCompanySaved(true);
-        setTimeout(() => setCompanySaved(false), 2500);
+        try {
+            await api.put('/settings', {
+                company_name: companyName,
+                company_cnpj: companyCnpj.replace(/\D/g, ''),
+                company_phone: companyPhone.replace(/\D/g, '')
+            });
+            setCompanySaved(true);
+            setTimeout(() => setCompanySaved(false), 2500);
+        } catch (error) {
+            console.error('Error saving company info:', error);
+            toast.error('Erro ao salvar dados da empresa.');
+        }
     };
 
     const handleManualBackup = async () => {
@@ -554,7 +564,8 @@ const SettingsPage = () => {
                 </div>
             )}
 
-            {/* Base/HQ Location */}
+            {/* Base/HQ Location — Admin only */}
+            {user?.role === 'admin' && (
             <div style={cardStyle}>
                 <div style={cardHeaderStyle}>
                     <div style={iconBadgeStyle('#dcfce7')}>
@@ -608,8 +619,10 @@ const SettingsPage = () => {
                     </button>
                 </form>
             </div>
+            )}
 
-            {/* Company Info */}
+            {/* Company Info — Admin only */}
+            {user?.role === 'admin' && (
             <div style={cardStyle}>
                 <div style={cardHeaderStyle}>
                     <div style={iconBadgeStyle('#e0e7ff')}>
@@ -658,6 +671,7 @@ const SettingsPage = () => {
                     </button>
                 </form>
             </div>
+            )}
             {/* System Actions */}
             {user?.role === 'admin' && (
                 <div style={cardStyle}>

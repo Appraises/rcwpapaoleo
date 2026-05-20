@@ -24,6 +24,20 @@ router.get('/geocode', authMiddleware, async (req, res) => {
     }
 });
 
+// GET /api/settings/base — retrieve base/HQ coordinates (any authenticated user)
+router.get('/base', authMiddleware, async (req, res) => {
+    try {
+        const keys = ['base_lat', 'base_lng', 'base_name'];
+        const settings = await SystemSetting.findAll({ where: { key: keys } });
+        const result = {};
+        settings.forEach(s => { result[s.key] = s.value; });
+        res.json(result);
+    } catch (error) {
+        console.error('Error fetching base settings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // GET /api/settings — retrieve all settings (or specific keys)
 router.get('/', authMiddleware, requireAdmin, async (req, res) => {
     try {
